@@ -1,0 +1,495 @@
+import React, { memo, useCallback, useMemo, useState, PropsWithChildren, ButtonHTMLAttributes, HTMLAttributes } from "react";
+import {
+  Swords,
+  Shield,
+  Backpack,
+  Map as MapIcon,
+  MessageSquare,
+  Users2,
+  Flame,
+  ChevronRight,
+  Sparkles,
+  Crown,
+  Menu,
+  Download,
+  Play,
+  Search,
+} from "lucide-react";
+
+/**
+ * GamePortalPage (Refactored, TypeScript)
+ * - Strongly typed props
+ * - Componentized single file
+ * - No external UI deps (temp primitives below)
+ * - Tailwind classes remain
+ *
+ * Fixes:
+ * - Removed duplicate React import that caused "Identifier 'React' has already been declared".
+ */
+
+// ===== Config =====
+const SHOW_ACTIONS = false; // 헤더 액션 버튼 노출 여부
+
+// ===== Types & Utils =====
+type Classable = { className?: string };
+const cx = (...parts: Array<string | undefined | false>) => parts.filter(Boolean).join(" ");
+
+// ===== Minimal UI primitives (sandbox-friendly) =====
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Classable {}
+const Button: React.FC<PropsWithChildren<ButtonProps>> = ({ children, className, ...props }) => (
+  <button
+    {...props}
+    className={cx("px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded transition", className)}
+  >
+    {children}
+  </button>
+);
+
+interface DivProps extends HTMLAttributes<HTMLDivElement>, Classable {}
+const Card: React.FC<PropsWithChildren<DivProps>> = ({ children, className, ...props }) => (
+  <div {...props} className={cx("bg-gray-900/80 border border-gray-800 rounded-xl p-3", className)}>
+    {children}
+  </div>
+);
+const CardHeader: React.FC<PropsWithChildren<Classable>> = ({ children, className }) => (
+  <div className={cx("mb-2", className)}>{children}</div>
+);
+const CardTitle: React.FC<PropsWithChildren<Classable>> = ({ children, className }) => (
+  <h3 className={cx("text-base font-semibold", className)}>{children}</h3>
+);
+const CardContent: React.FC<PropsWithChildren<Classable>> = ({ children, className }) => (
+  <div className={className}>{children}</div>
+);
+const Badge: React.FC<PropsWithChildren<Classable>> = ({ children, className }) => (
+  <span className={cx("inline-flex items-center px-2 py-0.5 text-xs rounded bg-gray-700 text-gray-100", className)}>{children}</span>
+);
+const Avatar: React.FC<PropsWithChildren<Classable>> = ({ children, className }) => (
+  <div className={cx("w-8 h-8 rounded-full bg-gray-600 overflow-hidden flex items-center justify-center text-white", className)}>
+    {children}
+  </div>
+);
+const AvatarFallback: React.FC<PropsWithChildren<Classable>> = ({ children, className }) => (
+  <span className={cx("text-xs font-medium", className)}>{children}</span>
+);
+const Separator: React.FC<Classable> = ({ className }) => <hr className={cx("border-gray-800", className)} />;
+
+// ===== Domain UI =====
+const Stat = memo(function Stat({ label, value }: { label: string; value: number }) {
+  const width = useMemo(() => `${Math.max(0, Math.min(100, value))}%`, [value]);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-zinc-400">{label}</span>
+        <span className="text-xs font-medium">{value}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+        <div className="h-full bg-emerald-500" style={{ width }} />
+      </div>
+    </div>
+  );
+});
+
+const FeedItem = memo(function FeedItem({ user, text }: { user: string; text: string }) {
+  return (
+    <div className="flex gap-3 py-1.5">
+      <Avatar className="shrink-0">
+        <AvatarFallback>{user.slice(0, 2)}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1">
+        <p className="text-sm">
+          <span className="font-medium mr-2">{user}</span>
+          {text}
+        </p>
+        <div className="mt-2 h-px bg-zinc-800" />
+      </div>
+    </div>
+  );
+});
+
+const Notice = memo(function Notice({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="p-3 rounded-xl bg-zinc-800/40">
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-xs text-zinc-400 mt-1">{body}</p>
+    </div>
+  );
+});
+
+// ===== Section: Header =====
+interface HeaderProps { menuOpen: boolean; setMenuOpen: (v: boolean) => void }
+function Header({ menuOpen, setMenuOpen }: HeaderProps) {
+  const toggleMenu = useCallback(() => setMenuOpen(!menuOpen), [menuOpen, setMenuOpen]);
+  return (
+    <header className="sticky top-0 z-40 backdrop-blur bg-zinc-950/80 border-b border-zinc-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-700 grid place-items-center">
+            <Crown className="w-5 h-5" />
+          </div>
+          <span className="text-lg sm:text-xl font-semibold tracking-wide">SOULWORLD</span>
+          <Badge className="ml-2 bg-zinc-800/80">Alpha</Badge>
+        </div>
+        <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-300">
+          <a className="hover:text-white transition" href="#home">홈</a>
+          <a className="hover:text-white transition" href="#game">게임</a>
+          <a className="hover:text-white transition" href="#community">커뮤니티</a>
+          <a className="hover:text-white transition" href="#news">뉴스</a>
+        </nav>
+        {SHOW_ACTIONS && (
+          <div className="hidden md:flex items-center gap-3">
+            <Button className="rounded-2xl"><Download className="mr-2 w-4 h-4" />다운로드</Button>
+            <Button className="rounded-2xl font-semibold"><Play className="mr-2 w-4 h-4" />바로 플레이</Button>
+          </div>
+        )}
+        <Button onClick={toggleMenu} className="md:hidden bg-transparent hover:bg-zinc-800/60" aria-label="메뉴 열기">
+          <Menu className="w-5 h-5" />
+        </Button>
+      </div>
+      {menuOpen && (
+        <div className="md:hidden border-t border-zinc-800 bg-zinc-950/90 px-4 py-3 grid gap-2">
+          <a className="py-1" href="#home">홈</a>
+          <a className="py-1" href="#game">게임</a>
+          <a className="py-1" href="#community">커뮤니티</a>
+          <a className="py-1" href="#news">뉴스</a>
+        </div>
+      )}
+    </header>
+  );
+}
+
+// ===== Section: Hero =====
+function Hero() {
+  return (
+    <section id="home" className="px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mx-auto max-w-7xl">
+        <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight">어둠의 미궁을 탐험하라</h1>
+        <p className="mt-2 text-zinc-300 max-w-2xl">실시간 던전 탐험, 수집 요소, 커뮤니티와 채팅까지 한 화면에서. 브라우저만 있으면 준비 완료.</p>
+        <div className="mt-4 flex gap-2">
+          <Button className="rounded-2xl">시작하기</Button>
+          <Button className="rounded-2xl bg-zinc-800 hover:bg-zinc-700">
+            <Sparkles className="mr-2 w-4 h-4" />패치 노트
+          </Button>
+        </div>
+      </div>
+      <Separator className="mt-6" />
+    </section>
+  );
+}
+
+// ===== Section: Marquee =====
+function Marquee() {
+  return (
+    <div className="border-y border-zinc-900/80 bg-zinc-900/40">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-sm py-2 flex items-center gap-3 text-zinc-300">
+        <Flame className="w-4 h-4" />
+        <span className="truncate">이벤트: 8월 30일까지 '지하호수 왕' 레이드 오픈 — 한정 보상 지급</span>
+        <ChevronRight className="w-4 h-4 ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+// ===== Left Column =====
+function InventoryCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Backpack className="w-4 h-4" />인벤토리
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-5 gap-2">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-lg bg-zinc-800 grid place-items-center text-zinc-400">
+              {i === 2 ? <Swords className="w-5 h-5" /> : i === 6 ? <Shield className="w-5 h-5" /> : <Backpack className="w-5 h-5" />}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CharacterStatusCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">캐릭터 상태</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm text-zinc-300">
+        <Stat label="HP" value={82} />
+        <Stat label="MP" value={56} />
+        <Stat label="STA" value={73} />
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Badge className="bg-zinc-800/80">얼음 저항 +12%</Badge>
+          <Badge className="bg-zinc-800/80">출혈 면역</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ===== Center Column =====
+function GameMapCard() {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <MapIcon className="w-4 h-4" />미궁 — 층 3 : 지하호수
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="relative h-[420px] lg:h-[560px]">
+          {/* Placeholder dungeon grid */}
+          <div className="absolute inset-0 grid grid-cols-12 grid-rows-8">
+            {Array.from({ length: 96 }).map((_, i) => (
+              <div key={i} className="border border-zinc-800/60 bg-zinc-900/60" />
+            ))}
+          </div>
+          {/* HUD */}
+          <div className="absolute left-3 top-3 flex items-center gap-2 text-xs">
+            <Badge className="rounded">좌표 (6, 4)</Badge>
+            <Badge className="rounded bg-zinc-800/80">적 감지: 2</Badge>
+          </div>
+          {/* Controls */}
+          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+            <div className="flex flex-wrap gap-2">
+              <Button className="rounded-xl"><Swords className="mr-2 w-4 h-4" />공격</Button>
+              <Button className="rounded-xl"><Shield className="mr-2 w-4 h-4" />가드</Button>
+              <Button className="rounded-xl"><Flame className="mr-2 w-4 h-4" />스킬</Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ===== Right Column =====
+function CommunityCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users2 className="w-4 h-4" />커뮤니티 & 채팅
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="relative">
+          <input placeholder="게시글 검색" className="w-full pr-10 px-2 py-1.5 rounded bg-gray-800 text-sm" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+        </div>
+        <div className="h-48 mt-3 pr-1 overflow-y-auto space-y-2">
+          <FeedItem user="Rhea" text="층 3 보스는 냉기 피해가 잘 먹힘" />
+          <FeedItem user="Dane" text="희귀 반지 드랍 위치? 동쪽 방 2개 지나서" />
+          <FeedItem user="Ludus" text="UI 다크 테마 너무 좋다 ✨" />
+          <FeedItem user="Kane" text="오늘 저녁 9시 레이드 모집" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface ChatCardProps { log: string[]; onSend: (msg: string) => void }
+function ChatCard({ log, onSend }: ChatCardProps) {
+  const [chatInput, setChatInput] = useState("");
+
+  const handleEnter = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const text = chatInput.trim();
+        if (!text) return;
+        onSend(text);
+        setChatInput("");
+      }
+    },
+    [chatInput, onSend]
+  );
+
+  const handleClick = useCallback(() => {
+    const text = chatInput.trim();
+    if (!text) return;
+    onSend(text);
+    setChatInput("");
+  }, [chatInput, onSend]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">채팅</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-40 overflow-y-auto text-sm mb-2 space-y-1">
+          {log.map((line, idx) => (
+            <div key={idx}>{line}</div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={handleEnter}
+            placeholder="메시지 입력..."
+            className="flex-1 px-2 py-1.5 rounded bg-gray-800 text-white"
+          />
+          <Button onClick={handleClick}>
+            <MessageSquare className="mr-1.5 w-4 h-4" />보내기
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NoticeCardGroup() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">공지</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm text-zinc-300">
+        <Notice title="정기 점검" body="8월 21일(수) 02:00–06:00 서버 점검" />
+        <Notice title="시즌 보상" body="8월 30일 전투 포인트 정산 예정" />
+      </CardContent>
+    </Card>
+  );
+}
+
+// ===== Section: News =====
+function NewsSection() {
+  return (
+    <section id="news" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-14">
+      <div className="grid md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />패치 노트 #{i}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-zinc-300">
+              새로운 방 생성 규칙과 적 AI 개선, 드랍 테이블 조정이 포함되었습니다.
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ===== Section: Footer =====
+function Footer() {
+  return (
+    <footer className="border-t border-zinc-900/70 bg-zinc-950/80">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-20 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-zinc-400">
+        <p>© 2025 SOULWORLD Studio</p>
+        <div className="flex items-center gap-4">
+          <a href="#" className="hover:text-zinc-200">이용약관</a>
+          <a href="#" className="hover:text-zinc-200">개인정보처리방침</a>
+          <a href="#" className="hover:text-zinc-200">문의</a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ===== Page =====
+export default function GamePortalPage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [log, setLog] = useState<string[]>([
+    "[SYSTEM] 미궁 입장에 성공했습니다.",
+    "[TIP] 적의 뒤를 잡으면 추가 피해를 입힙니다.",
+    "[LOOT] 오래된 상자에서 '녹슨 열쇠'를 획득!",
+  ]);
+
+  const handleSend = useCallback((msg: string) => {
+    setLog((l) => [...l, `[YOU] ${msg}`]);
+  }, []);
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-zinc-950 via-black to-black text-zinc-100">
+      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <Hero />
+      <Marquee />
+
+      <main id="game" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_360px] gap-4">
+          {/* Left */}
+          <section className="order-2 xl:order-1 space-y-4">
+            <InventoryCard />
+            <CharacterStatusCard />
+          </section>
+
+          {/* Center */}
+          <section className="order-1 xl:order-2">
+            <GameMapCard />
+          </section>
+
+          {/* Right */}
+          <section id="community" className="order-3 space-y-4">
+            <CommunityCard />
+            <ChatCard log={log} onSend={handleSend} />
+            <NoticeCardGroup />
+          </section>
+        </div>
+      </main>
+
+      <NewsSection />
+      <Footer />
+    </div>
+  );
+}
+
+// ===== Pure fn & tests (kept + added) =====
+export function __test_appendChat(prevLog: string[], input: string | number) {
+  const text = String(input ?? "").trim();
+  if (!text) return prevLog.slice();
+  return [...prevLog, `[YOU] ${text}`];
+}
+
+export const __tests__ = [
+  {
+    name: "appendChat: 공백 입력 무시",
+    run: () => {
+      const out = __test_appendChat(["a"], "   ");
+      return JSON.stringify(out) === JSON.stringify(["a"]);
+    },
+  },
+  {
+    name: "appendChat: 정상 입력",
+    run: () => {
+      const out = __test_appendChat(["a"], "hi");
+      return JSON.stringify(out) === JSON.stringify(["a", "[YOU] hi"]);
+    },
+  },
+  {
+    name: "appendChat: 앞뒤 공백 트림",
+    run: () => {
+      const out = __test_appendChat(["a"], "  hi  ");
+      return JSON.stringify(out) === JSON.stringify(["a", "[YOU] hi"]);
+    },
+  },
+  {
+    name: "appendChat: 개행 포함 트림",
+    run: () => {
+      const out = __test_appendChat(["a"], "\n  hi\n");
+      return JSON.stringify(out) === JSON.stringify(["a", "[YOU] hi"]);
+    },
+  },
+  {
+    name: "appendChat: 숫자 입력 문자열 변환",
+    run: () => {
+      const out = __test_appendChat(["a"], 123 as unknown as string);
+      return JSON.stringify(out) === JSON.stringify(["a", "[YOU] 123"]);
+    },
+  },
+  {
+    name: "appendChat: 원본 배열 불변성 유지",
+    run: () => {
+      const prev = ["x"]; const out = __test_appendChat(prev, " ");
+      return JSON.stringify(out) === JSON.stringify(["x"]) && out !== prev;
+    },
+  },
+];
