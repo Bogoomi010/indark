@@ -1,10 +1,10 @@
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Header,
   Hero,
   Marquee,
   NewsSection,
-  Card,
+  SceneImageSection,
   InventoryCard,
   CharacterStatusCard,
   GameMapCard,
@@ -42,13 +42,9 @@ export default function GamePortalPage() {
           </section>
 
           <section className="order-1 xl:order-2">
-            <Card className="overflow-hidden">
-              <img
-                src="/dungeon-entrance.png"
-                alt="어두운 미궁 입구를 밝히는 횃불"
-                className="w-full h-[420px] lg:h-[560px] object-cover"
-              />
-            </Card>
+            <div className="w-full">
+              <SceneImageSection variant="dungeonEntrance" className="w-full" />
+            </div>
             <MapControls />
           </section>
 

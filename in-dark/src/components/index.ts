@@ -13,6 +13,7 @@ export * from "./layout/Footer";
 export * from "./sections/Hero";
 export * from "./sections/Marquee";
 export * from "./sections/News";
+export * from "./sections/SceneImage";
 
 // game
 export * from "./game/Inventory/InventoryCard";
