@@ -16,14 +16,9 @@ export * from "./sections/News";
 export * from "./sections/SceneImage";
 
 // game
-export * from "./game/Inventory/InventoryCard";
-export * from "./game/Character/CharacterStatusCard";
-export * from "./game/GameMap/GameMapCard";
-export * from "./game/GameMap/MapControls";
+export * from "./game";
 
 // community
-export * from "./community/CommunityCard/CommunityCard";
-export * from "./community/Chat/ChatCard";
-export * from "./community/Notice/NoticeCardGroup";
+export * from "./community";
 
 

@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card";
 import { Avatar, AvatarFallback } from "../../ui/Avatar";
 import { Search, Users2 } from "lucide-react";

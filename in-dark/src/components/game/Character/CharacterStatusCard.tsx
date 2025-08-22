@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card";
 import { Badge } from "../../ui/Badge";
 import { useI18n } from "../../../i18n/i18n";

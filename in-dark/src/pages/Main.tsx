@@ -13,7 +13,7 @@ import {
   ChatCard,
   NoticeCardGroup,
   Footer,
-} from "./components";
+} from "../components";
 
 export default function GamePortalPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -61,4 +61,5 @@ export default function GamePortalPage() {
     </div>
   );
 }
+
 

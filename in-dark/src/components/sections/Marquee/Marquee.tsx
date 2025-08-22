@@ -1,4 +1,3 @@
-import React from "react";
 import { ChevronRight, Flame } from "lucide-react";
 import { useI18n } from "../../../i18n/i18n";
 

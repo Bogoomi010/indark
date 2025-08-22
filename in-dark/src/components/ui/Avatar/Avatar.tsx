@@ -1,4 +1,4 @@
-import React, { type PropsWithChildren } from "react";
+import { type PropsWithChildren } from "react";
 import { cx } from "../../../utils/classNames";
 
 export function Avatar({ className, children }: PropsWithChildren<{ className?: string }>) {

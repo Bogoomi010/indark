@@ -1,4 +1,3 @@
-import React from "react";
 import { cx } from "../../../utils/classNames";
 
 export function Separator({ className }: { className?: string }) {

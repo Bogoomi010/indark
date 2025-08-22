@@ -79,6 +79,22 @@ const translations: Translations = {
 	"footer.terms": { en: "Terms", ko: "이용약관", de: "Nutzungsbedingungen" },
 	"footer.privacy": { en: "Privacy", ko: "개인정보처리방침", de: "Datenschutz" },
 	"footer.contact": { en: "Contact", ko: "문의", de: "Kontakt" },
+
+	/* ===== Login Page ===== */
+	"login.title.signin": { en: "The gate opens", ko: "미궁의 문이 열립니다", de: "Das Tor öffnet sich" },
+	"login.title.signup": { en: "Record your oath", ko: "서약을 기록하고 입장하세요", de: "Lege deinen Schwur ab" },
+	"login.title.oauthNickname": { en: "Choose your nickname", ko: "닉네임을 정하고 입장하세요", de: "Wähle deinen Spitznamen" },
+	"login.email": { en: "Email", ko: "이메일", de: "E-Mail" },
+	"login.password": { en: "Password", ko: "비밀번호", de: "Passwort" },
+	"login.passwordConfirm": { en: "Confirm Password", ko: "비밀번호 다시 입력", de: "Passwort bestätigen" },
+	"login.nickname": { en: "Nickname", ko: "닉네임", de: "Spitzname" },
+	"login.signin": { en: "Open Gate", ko: "문 열기", de: "Tor öffnen" },
+	"login.signup": { en: "Join", ko: "서약하기", de: "Beitreten" },
+	"login.continueWithGoogle": { en: "Continue with Google", ko: "Google로 계속하기", de: "Mit Google fortfahren" },
+	"login.or": { en: "or", ko: "또는", de: "oder" },
+	"login.oauth.done": { en: "Google verified. Set nickname to enter.", ko: "Google 인증이 완료되었습니다. 닉네임을 정하면 입장할 수 있어요.", de: "Google bestätigt. Lege einen Spitznamen fest." },
+	"login.tab.signin": { en: "Sign in", ko: "로그인", de: "Anmelden" },
+	"login.tab.signup": { en: "Sign up", ko: "회원가입", de: "Registrieren" },
 };
 
 interface I18nContextValue {

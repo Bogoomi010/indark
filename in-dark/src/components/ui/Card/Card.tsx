@@ -1,4 +1,4 @@
-import React, { type HTMLAttributes, type PropsWithChildren } from "react";
+import { type HTMLAttributes, type PropsWithChildren } from "react";
 import { cx } from "../../../utils/classNames";
 
 export interface DivProps extends HTMLAttributes<HTMLDivElement> { className?: string }

@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card";
 import { useI18n } from "../../../i18n/i18n";
 

@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card";
 import { Badge } from "../../ui/Badge";
 import { Map as MapIcon } from "lucide-react";

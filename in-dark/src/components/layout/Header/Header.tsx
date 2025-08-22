@@ -1,14 +1,18 @@
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 import { Crown, Download, Menu, Play, Globe } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
 import { useI18n } from "../../../i18n/i18n";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../auth/AuthContext";
 
 interface HeaderProps { menuOpen: boolean; setMenuOpen: (v: boolean) => void; showActions?: boolean }
 
 export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderProps) {
 	const toggleMenu = useCallback(() => setMenuOpen(!menuOpen), [menuOpen, setMenuOpen]);
   const { t, locale, setLocale } = useI18n();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const cycleLocale = useCallback(() => {
     const order = ["en", "ko", "de"] as const;
@@ -16,6 +20,13 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
     const next = order[(idx + 1) % order.length];
     setLocale(next);
   }, [locale, setLocale]);
+  const handleLogin = useCallback(() => {
+    navigate("/login");
+  }, [navigate]);
+  const handleLogout = useCallback(() => {
+    signOut();
+    navigate("/login", { replace: true });
+  }, [signOut, navigate]);
 	return (
 		<header className="sticky top-0 z-40 backdrop-blur bg-zinc-950/80 border-b border-zinc-900">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -44,6 +55,13 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 						</div>
 					</details>
 				</div>
+        <div className="ml-2 hidden md:flex">
+          {!user ? (
+            <Button className="rounded-2xl" onClick={handleLogin}>로그인</Button>
+          ) : (
+            <Button className="rounded-2xl" onClick={handleLogout}>로그아웃</Button>
+          )}
+        </div>
 				{showActions && (
 					<div className="hidden md:flex items-center gap-3">
 						<Button className="rounded-2xl"><Download className="mr-2 w-4 h-4" />다운로드</Button>

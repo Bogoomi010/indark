@@ -1,4 +1,4 @@
-import React, { type ButtonHTMLAttributes, type PropsWithChildren } from "react";
+import { type ButtonHTMLAttributes, type PropsWithChildren } from "react";
 import { cx } from "../../../utils/classNames";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

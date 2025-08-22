@@ -1,4 +1,3 @@
-import React from "react";
 import { Button } from "../../ui/Button";
 import { Separator } from "../../ui/Separator";
 import { Sparkles } from "lucide-react";
