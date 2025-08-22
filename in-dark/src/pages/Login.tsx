@@ -14,6 +14,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const { t, locale, setLocale } = useI18n();
+  const spotlightRef = useRef<HTMLDivElement | null>(null);
 
   const [mode, setMode] = useState<"signin" | "signup" | "oauthNickname">("signin");
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,15 @@ export default function LoginPage() {
         setMode("oauthNickname");
       }
     } catch { /* noop */ }
+  }, []);
+
+  // 초기 스포트라이트 위치를 중앙으로 설정
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty("--mx", `${rect.width / 2}px`);
+    el.style.setProperty("--my", `${rect.height / 2}px`);
   }, []);
 
   async function onLogin(payload: LoginPayload) {
@@ -102,9 +112,21 @@ export default function LoginPage() {
     await onLogin({ type: "oauth_nickname", provider: "google", nickname: nickname.trim(), email: email || oauthEmail });
   }
 
+  // 커서 위치를 CSS 변수로 전달하여 스포트라이트를 이동
+  function handleMouse(e: React.MouseEvent) {
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.setProperty("--mx", `${x}px`);
+    el.style.setProperty("--my", `${y}px`);
+  }
+
   return (
     <div
       ref={rootRef}
+      onMouseMove={handleMouse}
       className="relative min-h-screen w-full overflow-hidden bg-black text-gray-200 font-body"
       style={{
         backgroundImage: "url('/img_loginbackground.png')",
@@ -112,6 +134,16 @@ export default function LoginPage() {
         backgroundPosition: "center",
       }}
     >
+      {/* Torch spotlight overlay */}
+      <div
+        ref={spotlightRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(600px 600px at var(--mx) var(--my), rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.92) 100%)",
+        }}
+      />
       <div className="relative z-10 grid min-h-screen grid-rows-[auto_1fr_auto]">
         <header className="flex items-center justify-between p-6">
           <div className="text-2xl tracking-[0.4em] font-semibold text-gray-100 font-heading">IN DARK</div>
