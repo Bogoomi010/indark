@@ -14,9 +14,9 @@ export function GameMapCard() {
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="p-0">
-				<div className="relative h-[360px] lg:h-[360px]">
-					<div className="absolute inset-0 grid grid-cols-12 grid-rows-8">
-						{Array.from({ length: 96 }).map((_, i) => (
+				<div className="relative w-full aspect-square">
+					<div className="absolute inset-0 grid grid-cols-10 grid-rows-10">
+						{Array.from({ length: 100 }).map((_, i) => (
 							<div key={i} className="border border-zinc-800/60 bg-zinc-900/60" />
 						))}
 					</div>

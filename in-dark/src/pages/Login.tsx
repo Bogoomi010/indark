@@ -141,12 +141,25 @@ export default function LoginPage() {
         className="pointer-events-none absolute inset-0 z-0"
         style={{
           background:
-            "radial-gradient(600px 600px at var(--mx) var(--my), rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.92) 100%)",
+            "radial-gradient(420px 420px at var(--mx) var(--my), rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.92) 100%)",
         }}
       />
       <div className="relative z-10 grid min-h-screen grid-rows-[auto_1fr_auto]">
         <header className="flex items-center justify-between p-6">
-          <div className="text-2xl tracking-[0.4em] font-semibold text-gray-100 font-heading">IN DARK</div>
+          <div 
+            onClick={() => {
+              setMode("signin");
+              setEmail("");
+              setPassword("");
+              setNickname("");
+              setPasswordConfirm("");
+              setError(null);
+              setOauthEmail("");
+            }} 
+            className="text-2xl tracking-[0.4em] font-semibold text-gray-100 font-heading cursor-pointer hover:text-amber-300 transition-colors"
+          >
+            IN DARK
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <details className="group">
