@@ -8,7 +8,7 @@ import {
   InventoryCard,
   CharacterStatusCard,
   GameMapCard,
-  MapControls,
+  PlayerActionControls,
   CommunityCard,
   ChatCard,
   NoticeCardGroup,
@@ -44,7 +44,7 @@ export default function GamePortalPage() {
             <div className="w-full">
               <SceneImageSection variant="dungeonEntrance" className="w-full" />
             </div>
-            <MapControls />
+            <PlayerActionControls />
             <InventoryCard />
           </section>
 

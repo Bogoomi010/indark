@@ -3,7 +3,7 @@ import { Card } from "../../ui/Card";
 import { Flame, Shield, Swords } from "lucide-react";
 import { useI18n } from "../../../i18n/i18n";
 
-export function MapControls() {
+export function PlayerActionControls() {
 	const { t } = useI18n();
 	return (
 		<Card className="mt-3">

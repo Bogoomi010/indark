@@ -1,4 +1,4 @@
 export * from "./GameMapCard";
-export * from "./MapControls";
+export * from "./PlayerActionControls";
 
 
