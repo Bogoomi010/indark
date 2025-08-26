@@ -3,8 +3,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut as fbSignOut, updateProfile as fbUpdateProfile } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/firebaseConfig';
+import { auth } from '../firebase/firebaseConfig';
+import { upsertUserProfile } from '../data/userProfile';
 import { authProviders } from './providers';
 import type { AuthProviderKey } from './providers';
 
@@ -27,23 +27,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 async function upsertUser(u: User) {
-  const ref = doc(db, 'users', u.uid);
-  const snap = await getDoc(ref);
-  const base: AppUser = {
-    uid: u.uid,
-    email: u.email,
-    emailVerified: u.emailVerified,
-    displayName: u.displayName,
-    photoURL: u.photoURL,
-    providerId: u.providerData[0]?.providerId ?? 'unknown',
-    roles: ['user'],
-    profile: {},
-  };
-  if (snap.exists()) {
-    await setDoc(ref, { ...base, lastLoginAt: serverTimestamp() }, { merge: true });
-  } else {
-    await setDoc(ref, { ...base, createdAt: serverTimestamp(), lastLoginAt: serverTimestamp() });
-  }
+  // 데이터 계층으로 위임
+  await upsertUserProfile(u);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

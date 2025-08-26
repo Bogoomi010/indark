@@ -1,0 +1,88 @@
+// src/types/user.d.ts 또는 이와 유사한 파일에 정의할 수 있습니다.
+import { Timestamp } from 'firebase/firestore';
+
+// 유저가 이메일 또는 구글 소셜 인증을 통해 로그인 시 cloude firebase 의 DB에 값이 추가되도록 하고싶습니다.
+// 아래 코드를 참고해서 프로젝트에 적용할 수 있도록 설계
+
+interface UserProfile {
+  email: string | null;
+  nickname: string;
+  provider: string;
+  createdAt: Timestamp; // Firestore Timestamp 타입 사용
+  lastLogin: Timestamp; // Firestore Timestamp 타입 사용
+  settings: {
+    theme: string;
+    language: string;
+  };
+}
+
+
+// 필요한 Firebase 모듈을 가져옵니다.
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc, Timestamp } from 'firebase/firestore';
+// Firebase 앱 초기화 코드는 여기에 포함되어 있지 않습니다.
+// 일반적으로 'firebase/app'에서 initializeApp을 사용하여 앱을 초기화합니다.
+// 예: import { initializeApp } from 'firebase/app';
+//    const app = initializeApp(firebaseConfig);
+
+// 위에서 정의한 사용자 프로필 인터페이스를 가져옵니다.
+// import { UserProfile } from './types/user'; // 실제 파일 경로에 맞게 조정하세요.
+
+// Firebase 서비스 인스턴스 가져오기
+const auth = getAuth();
+const db = getFirestore();
+
+/**
+ * 사용자 로그인 상태가 변경될 때 Firestore에 사용자 프로필을 저장하거나 업데이트합니다.
+ * 이 함수는 앱이 시작될 때 한 번만 호출되도록 설정하는 것이 좋습니다.
+ */
+export function setupUserProfileListener() {
+  onAuthStateChanged(auth, async (user: User | null) => {
+    if (user) {
+      // 사용자가 로그인됨
+      const userDocRef = doc(db, 'users', user.uid);
+
+      try {
+        const userDocSnap = await getDoc(userDocRef);
+        let userDataToSave: UserProfile;
+
+        if (!userDocSnap.exists()) {
+          // 문서가 존재하지 않으면, 새로운 사용자이므로 초기 데이터를 설정합니다.
+          userDataToSave = {
+            email: user.email,
+            nickname: user.displayName || "새로운 모험가", // Google 로그인 등에서 displayName을 가져올 수 있습니다.
+            provider: user.providerData[0]?.providerId || 'unknown', // 어떤 인증 제공업체로 로그인했는지
+            createdAt: serverTimestamp() as Timestamp, // 최초 생성 시간 (서버 타임스탬프)
+            lastLogin: serverTimestamp() as Timestamp, // 마지막 로그인 시간 (서버 타임스탬프)
+            settings: {
+              theme: "dark",
+              language: "ko"
+            }
+          };
+          // 새 문서를 생성합니다.
+          await setDoc(userDocRef, userDataToSave);
+          console.log(`새로운 사용자 프로필이 생성되었습니다: ${user.uid}`);
+        } else {
+          // 문서가 이미 존재하면, 마지막 로그인 시간만 업데이트합니다.
+          // 기존 데이터는 그대로 두고 lastLogin만 변경하기 위해 merge: true를 사용합니다.
+          await setDoc(userDocRef, {
+            lastLogin: serverTimestamp() as Timestamp
+          }, { merge: true });
+          console.log(`사용자 프로필이 업데이트되었습니다 (마지막 로그인): ${user.uid}`);
+        }
+      } catch (error) {
+        console.error("Firestore에 사용자 프로필을 저장/업데이트하는 중 오류 발생:", error);
+      }
+    } else {
+      // 사용자가 로그아웃됨
+      console.log("사용자가 로그아웃되었습니다.");
+    }
+  });
+}
+
+// 앱 초기화 후 이 함수를 호출하여 리스너를 설정합니다.
+// 예:
+// import { initializeApp } from 'firebase/app';
+// const firebaseConfig = { /* 여기에 Firebase 설정 */ };
+// const app = initializeApp(firebaseConfig);
+// setupUserProfileListener();
