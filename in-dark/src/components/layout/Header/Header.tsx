@@ -4,7 +4,7 @@ import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
 import { useI18n } from "../../../i18n/i18n";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../auth/AuthContext";
+import { useAuth } from "../../../auth/AuthProvider";
 
 interface HeaderProps { menuOpen: boolean; setMenuOpen: (v: boolean) => void; showActions?: boolean }
 
@@ -16,7 +16,7 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 
   const cycleLocale = useCallback(() => {
     const order = ["en", "ko", "de"] as const;
-    const idx = order.indexOf(locale as any);
+    const idx = order.indexOf(locale as typeof order[number]);
     const next = order[(idx + 1) % order.length];
     setLocale(next);
   }, [locale, setLocale]);
