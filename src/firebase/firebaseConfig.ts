@@ -5,13 +5,13 @@ import { getAnalytics, isSupported } from 'firebase/analytics';
 import type { Analytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyC0952E1JZrcR511fgYjBGI37m0Sutvow4",
+  authDomain: "in-dark.firebaseapp.com",
+  projectId: "in-dark",
+  storageBucket: "in-dark.firebasestorage.app",
+  messagingSenderId: "1024878008190",
+  appId: "1:1024878008190:web:d112fc4cf1a58fc236c52f",
+  measurementId: "G-P0DY7T11D1"
 };
 
 const app = initializeApp(firebaseConfig);
