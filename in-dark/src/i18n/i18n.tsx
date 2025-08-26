@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type Locale = "en" | "ko" | "de";
@@ -113,7 +114,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
 	const setLocale = useCallback((loc: Locale) => {
 		setLocaleState(loc);
-		try { window.localStorage.setItem("locale", loc); } catch {}
+                try {
+                        window.localStorage.setItem("locale", loc);
+                } catch (e) {
+                        console.error(e);
+                }
 	}, []);
 
 	const t = useCallback((key: keyof typeof translations) => {
