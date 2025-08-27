@@ -10,23 +10,23 @@ interface HeaderProps { menuOpen: boolean; setMenuOpen: (v: boolean) => void; sh
 
 export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderProps) {
 	const toggleMenu = useCallback(() => setMenuOpen(!menuOpen), [menuOpen, setMenuOpen]);
-  const { t, locale, setLocale } = useI18n();
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+	const { t, locale, setLocale } = useI18n();
+	const { user, signOut } = useAuth();
+	const navigate = useNavigate();
 
-  const cycleLocale = useCallback(() => {
-    const order = ["en", "ko", "de"] as const;
-    const idx = order.indexOf(locale as typeof order[number]);
-    const next = order[(idx + 1) % order.length];
-    setLocale(next);
-  }, [locale, setLocale]);
-  const handleLogin = useCallback(() => {
-    navigate("/login");
-  }, [navigate]);
-  const handleLogout = useCallback(() => {
-    signOut();
-    navigate("/login", { replace: true });
-  }, [signOut, navigate]);
+	const cycleLocale = useCallback(() => {
+		const order = ["en", "ko", "de"] as const;
+		const idx = order.indexOf(locale as typeof order[number]);
+		const next = order[(idx + 1) % order.length];
+		setLocale(next);
+	}, [locale, setLocale]);
+	const handleLogin = useCallback(() => {
+		navigate("/login");
+	}, [navigate]);
+	const handleLogout = useCallback(() => {
+		signOut();
+		navigate("/login", { replace: true });
+	}, [signOut, navigate]);
 	return (
 		<header className="sticky top-0 z-40 backdrop-blur bg-zinc-950/80 border-b border-zinc-900">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -55,20 +55,20 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 						</div>
 					</details>
 				</div>
-        <div className="ml-2 hidden md:flex">
-          {!user ? (
-            <Button className="rounded-2xl" onClick={handleLogin}>로그인</Button>
-          ) : (
-            <Button className="rounded-2xl" onClick={handleLogout}>로그아웃</Button>
-          )}
-        </div>
+				<div className="hidden md:flex items-center gap-2">
+					{!user ? (
+						<Button className="rounded-2xl" onClick={handleLogin}>{t("header.login")}</Button>
+					) : (
+						<Button className="rounded-2xl" onClick={handleLogout}>{t("header.logout")}</Button>
+					)}
+				</div>
 				{showActions && (
-					<div className="hidden md:flex items-center gap-3">
-						<Button className="rounded-2xl"><Download className="mr-2 w-4 h-4" />다운로드</Button>
-						<Button className="rounded-2xl font-semibold"><Play className="mr-2 w-4 h-4" />바로 플레이</Button>
+					<div className="hidden md:flex items-center gap-2">
+						<Button className="rounded-2xl"><Download className="mr-2 w-4 h-4" />{t("header.download")}</Button>
+						<Button className="rounded-2xl font-semibold"><Play className="mr-2 w-4 h-4" />{t("header.playNow")}</Button>
 					</div>
 				)}
-				<Button onClick={toggleMenu} className="md:hidden bg-transparent hover:bg-zinc-800/60" aria-label="메뉴 열기">
+				<Button onClick={toggleMenu} className="md:hidden bg-transparent hover:bg-zinc-800/60" aria-label={t("header.menu.open")}>
 					<Menu className="w-5 h-5" />
 				</Button>
 			</div>

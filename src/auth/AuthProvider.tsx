@@ -48,6 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const impl = authProviders[provider];
     if (!impl) throw new Error(`지원되지 않는 로그인 방식입니다: ${provider}`);
     await impl.signIn(options);
+    // 프로필 업데이트(예: displayName 설정)가 provider 내부에서 수행될 수 있으므로
+    // 로그인 직후 갱신된 사용자 정보를 기반으로 프로필을 다시 upsert합니다.
+    if (auth.currentUser) {
+      await upsertUser(auth.currentUser);
+    }
   };
 
   const signOut = async () => {

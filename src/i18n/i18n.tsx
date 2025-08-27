@@ -7,9 +7,9 @@ type Translations = Record<string, Record<Locale, string>>;
 
 const translations: Translations = {
 	"brand.title": {
-		en: "SOULWORLD",
-		ko: "SOULWORLD",
-		de: "SOULWORLD",
+		en: "In the dark",
+		ko: "In the dark",
+		de: "In the dark",
 	},
 	"nav.home": {
 		en: "Home",
@@ -80,6 +80,13 @@ const translations: Translations = {
 	"footer.terms": { en: "Terms", ko: "이용약관", de: "Nutzungsbedingungen" },
 	"footer.privacy": { en: "Privacy", ko: "개인정보처리방침", de: "Datenschutz" },
 	"footer.contact": { en: "Contact", ko: "문의", de: "Kontakt" },
+
+	/* ===== Header ===== */
+	"header.login": { en: "Log in", ko: "로그인", de: "Anmelden" },
+	"header.logout": { en: "Log out", ko: "로그아웃", de: "Abmelden" },
+	"header.download": { en: "Download", ko: "다운로드", de: "Download" },
+	"header.playNow": { en: "Play Now", ko: "바로 플레이", de: "Jetzt spielen" },
+	"header.menu.open": { en: "Open menu", ko: "메뉴 열기", de: "Menü öffnen" },
 
 	/* ===== Login Page ===== */
 	"login.title.signin": { en: "The gate opens", ko: "미궁의 문이 열립니다", de: "Das Tor öffnet sich" },
