@@ -317,7 +317,13 @@ export default function LoginPage() {
               {t("login.continueWithGoogle")}
             </button>
             <div className="text-center text-sm text-gray-400">
-              <button type="button" onClick={() => setMode("signin")}>{t("login.goSignin")}</button>
+              <button
+                type="button"
+                onClick={() => setMode("signin")}
+                className="w-full rounded-lg border border-white/10 bg-black/60 px-4 py-2 text-sm text-gray-100 hover:border-amber-400/40"
+              >
+                {t("login.tab.signup")}
+              </button>
             </div>
           </form>
         )}

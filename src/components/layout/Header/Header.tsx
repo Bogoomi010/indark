@@ -1,10 +1,12 @@
-import { useCallback } from "react";
-import { Crown, Download, Menu, Play, Globe } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Crown, Download, Menu, Play, Globe, User as UserIcon } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
 import { useI18n } from "../../../i18n/i18n";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/AuthProvider";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../../firebase/firebaseConfig";
 
 interface HeaderProps { menuOpen: boolean; setMenuOpen: (v: boolean) => void; showActions?: boolean }
 
@@ -13,6 +15,26 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 	const { t, locale, setLocale } = useI18n();
 	const { user, signOut } = useAuth();
 	const navigate = useNavigate();
+	const [nickname, setNickname] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!user) {
+			setNickname(null);
+			return;
+		}
+		const ref = doc(db, "users", user.uid);
+		const unsub = onSnapshot(
+			ref,
+			(snap) => {
+				const data = snap.data() as { nickname?: string } | undefined;
+				setNickname(data?.nickname ?? user.displayName ?? null);
+			},
+			() => {
+				setNickname(user.displayName ?? null);
+			}
+		);
+		return () => unsub();
+	}, [user]);
 
 	const cycleLocale = useCallback(() => {
 		const order = ["en", "ko", "de"] as const;
@@ -59,7 +81,13 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 					{!user ? (
 						<Button className="rounded-2xl" onClick={handleLogin}>{t("header.login")}</Button>
 					) : (
-						<Button className="rounded-2xl" onClick={handleLogout}>{t("header.logout")}</Button>
+						<>
+							<Button className="rounded-2xl cursor-default" title={nickname ?? undefined}>
+								<UserIcon className="mr-2 w-4 h-4" />
+								{nickname ?? user.displayName ?? user.email ?? "User"}
+							</Button>
+							<Button className="rounded-2xl" onClick={handleLogout}>{t("header.logout")}</Button>
+						</>
 					)}
 				</div>
 				{showActions && (
