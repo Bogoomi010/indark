@@ -30,13 +30,13 @@ export function SceneImageSection({ variant, src, alt, className, imageClassName
 	if (!finalSrc) return null;
 
 	return (
-		<Card className={cx("overflow-hidden", className)}>
-			{/* 16:9 비율 고정을 위한 패딩 박스 */}
-			<div className="relative w-full pt-[56.25%]">
+		<Card className={cx("overflow-hidden h-full", className)}>
+			{/* 부모(카드) 높이에 맞춰 이미지를 맞춤. 잘림 없이 보이도록 contain 사용 */}
+			<div className="relative w-full h-full">
 				<img
 					src={finalSrc}
 					alt={finalAlt}
-					className={cx("absolute inset-0 w-full h-full object-cover", imageClassName)}
+					className={cx("absolute inset-0 w-full h-full object-contain object-center", imageClassName)}
 				/>
 			</div>
 		</Card>

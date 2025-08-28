@@ -34,6 +34,11 @@ export default function GamePortalPage() {
       <Marquee />
 
       <main id="game" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        {/* 수정 포인트(폭/높이/브레이크포인트): 씬 이미지는 컨테이너 내부, 고정 높이 */}
+        <div className="w-full h-[40vh] mb-4">
+          <SceneImageSection variant="dungeonEntrance" className="w-full h-full" imageClassName="object-cover" />
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_360px] gap-4">
           <section className="order-2 xl:order-1 space-y-4">
             <GameMapCard />
@@ -41,9 +46,7 @@ export default function GamePortalPage() {
           </section>
 
           <section className="order-1 xl:order-2 space-y-4">
-            <div className="w-full">
-              <SceneImageSection variant="dungeonEntrance" className="w-full" />
-            </div>
+            {/* 중앙: 액션/인벤토리 스택 */}
             <PlayerActionControls />
             <InventoryCard />
           </section>
