@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Header,
   Hero,
@@ -14,14 +14,25 @@ import {
   NoticeCardGroup,
   Footer,
 } from "../components";
+import { GameLocalProvider, useLocalGame } from "../game/localGame";
 
 export default function GamePortalPage() {
+  return (
+    <GameLocalProvider>
+      <GamePortalInner />
+    </GameLocalProvider>
+  );
+}
+
+function GamePortalInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [log, setLog] = useState<string[]>([
     "[SYSTEM] 미궁 입장에 성공했습니다.",
     "[TIP] 적의 뒤를 잡으면 추가 피해를 입힙니다.",
     "[LOOT] 오래된 상자에서 '녹슨 열쇠'를 획득!",
   ]);
+  const { pos } = useLocalGame();
+  const changeKey = useMemo(() => `${pos.x},${pos.y}`,[pos.x,pos.y]);
 
   const handleSend = useCallback((msg: string) => {
     setLog((l) => [...l, `[YOU] ${msg}`]);
@@ -36,7 +47,7 @@ export default function GamePortalPage() {
       <main id="game" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         {/* 수정 포인트(폭/높이/브레이크포인트): 씬 이미지는 컨테이너 내부, 고정 높이 */}
         <div className="w-full h-[40vh] mb-4">
-          <SceneImageSection variant="dungeonEntrance" className="w-full h-full" imageClassName="object-cover" />
+          <SceneImageSection changeKey={changeKey} variant="dungeonEntrance" className="w-full h-full" imageClassName="object-cover" />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_360px] gap-4">

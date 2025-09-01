@@ -2,10 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card";
 import { Badge } from "../../ui/Badge";
 import { Map as MapIcon } from "lucide-react";
 import { useI18n } from "../../../i18n/i18n";
+import { useLocalGame } from "../../../game/localGame";
 // controls는 미니맵에서 분리되어 외부에서 배치됩니다
 
 export function GameMapCard() {
 	const { t } = useI18n();
+	const { pos } = useLocalGame();
 	return (
 		<Card className="overflow-hidden">
 			<CardHeader>
@@ -21,7 +23,7 @@ export function GameMapCard() {
 						))}
 					</div>
 					<div className="absolute left-3 top-3 flex items-center gap-2 text-xs">
-						<Badge className="rounded">{t("map.hud.coords")} (6, 4)</Badge>
+						<Badge className="rounded">{t("map.hud.coords")} ({pos.x}, {pos.y})</Badge>
 						<Badge className="rounded bg-zinc-800/80">{t("map.hud.enemies")}: 2</Badge>
 					</div>
 					{/* Controls removed; now rendered below the center image card */}

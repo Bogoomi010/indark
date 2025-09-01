@@ -135,7 +135,7 @@ export default function LoginPage() {
           <div className="relative ml-4">
             <details className="group">
               <summary className="list-none cursor-pointer rounded-2xl bg-zinc-800 hover:bg-zinc-700 px-2 py-1 text-xs inline-flex items-center gap-1">
-                <Globe className="w-4 h-4" /> {locale.toUpperCase()}
+                <Globe className="w-4 h-4" /> {(locale ?? 'en').toUpperCase()}
               </summary>
               <div className="absolute right-0 mt-2 w-28 rounded-md border border-zinc-800 bg-zinc-900 shadow-lg text-xs">
                 <button onClick={() => setLocale("en")} className="w-full text-left px-3 py-2 hover:bg-zinc-800">EN - English</button>
