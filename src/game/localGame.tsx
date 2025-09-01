@@ -14,33 +14,54 @@ type LocalGameValue = {
 
 const LocalGameContext = createContext<LocalGameValue | null>(null)
 
-const LS_KEY = 'in-dark/local/current'
+// legacy key (미사용)
+// const LS_KEY = 'in-dark/local/current'
 
-export function GameLocalProvider({ children }: { children: React.ReactNode }) {
-  const [pos, setPos] = useState<Vec2>({ x: 0, y: 0 })
-  const [worldSeed] = useState<string>(defaultWorldSeed)
-  const [torch, setTorch] = useState<number>(15)
-  const [sta, setSta] = useState<number>(15)
+function hashString(input: string): number {
+  let h = 2166136261 >>> 0
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i)
+    h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24)
+  }
+  return h >>> 0
+}
+
+export function GameLocalProvider({ children, userId = 'anon' }: { children: React.ReactNode; userId?: string }) {
+  // 저장된 데이터 동기 조회 (초기 상태용)
+  const readSaved = () => {
+    try {
+      const raw = localStorage.getItem(`in-dark/${userId}/current`)
+      return raw ? (JSON.parse(raw) as { pos?: Vec2; worldSeed?: string; torch?: number; sta?: number }) : null
+    } catch {
+      return null
+    }
+  }
+
+  const [worldSeed] = useState<string>(() => readSaved()?.worldSeed ?? defaultWorldSeed)
+  const [pos, setPos] = useState<Vec2>(() => {
+    const saved = readSaved()
+    if (saved?.pos) return saved.pos
+    const h = Math.abs(hashString(`${userId}:${worldSeed}`))
+    const rx = 2 + (h % 6)
+    const ry = 2 + ((h >> 3) % 6)
+    return { x: rx, y: ry }
+  })
+  const [torch, setTorch] = useState<number>(() => {
+    const saved = readSaved()
+    return typeof saved?.torch === 'number' ? saved.torch : 15
+  })
+  const [sta, setSta] = useState<number>(() => {
+    const saved = readSaved()
+    return typeof saved?.sta === 'number' ? saved.sta : 15
+  })
   const [lastDir, setLastDir] = useState<Dir | null>(null)
 
-  // load
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY)
-      if (raw) {
-        const doc = JSON.parse(raw) as { pos?: Vec2; worldSeed?: string; torch?: number; sta?: number }
-        if (doc.pos) setPos(doc.pos)
-        // worldSeed는 고정
-        if (typeof doc.torch === 'number') setTorch(doc.torch)
-        if (typeof doc.sta === 'number') setSta(doc.sta)
-      }
-    } catch {}
-  }, [])
+  // 초기 렌더 시 이미 랜덤 or 저장값으로 설정됨. 별도 로드 이펙트 불필요
 
   // persist
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify({ pos, worldSeed, torch, sta }))
-  }, [pos, worldSeed, torch, sta])
+    localStorage.setItem(`in-dark/${userId}/current`, JSON.stringify({ pos, worldSeed, torch, sta }))
+  }, [pos, worldSeed, torch, sta, userId])
 
   function opposite(d: Dir): Dir {
     switch (d) {

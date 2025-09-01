@@ -8,6 +8,11 @@ const IMAGE_PRESETS: Record<string, { src: string; alt: string }> = {
 		src: "/dungeon-entrance.png",
 		alt: "어두운 미궁 입구를 밝히는 횃불",
 	},
+	roomEmpty: { src: "/img_explore.png", alt: "텅 빈 방" },
+	roomMonster: { src: "/img_combat01.png", alt: "괴물이 있는 방" },
+	roomTrap: { src: "/img_combat02.png", alt: "함정이 있는 방" },
+	roomShop: { src: "/img_game_start.png", alt: "상점 방" },
+	roomTreasure: { src: "/img_get_rat.png", alt: "보물 방" },
 };
 
 export interface SceneImageSectionProps {

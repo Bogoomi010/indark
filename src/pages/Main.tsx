@@ -7,7 +7,6 @@ import {
   SceneImageSection,
   InventoryCard,
   CharacterStatusCard,
-  GameMapCard,
   PlayerActionControls,
   CommunityCard,
   ChatCard,
@@ -15,10 +14,15 @@ import {
   Footer,
 } from "../components";
 import { GameLocalProvider, useLocalGame } from "../game/localGame";
+import { useAuth } from "../auth/AuthProvider";
+import { roomTypeFor } from "../game/room";
+import HudMini from "../components/HudMini";
+import { NarrationBar } from "../components/NarrationBar";
 
 export default function GamePortalPage() {
+  const { user } = useAuth();
   return (
-    <GameLocalProvider>
+    <GameLocalProvider userId={user?.uid ?? 'anon'}>
       <GamePortalInner />
     </GameLocalProvider>
   );
@@ -33,6 +37,17 @@ function GamePortalInner() {
   ]);
   const { pos } = useLocalGame();
   const changeKey = useMemo(() => `${pos.x},${pos.y}`,[pos.x,pos.y]);
+  const roomVariant: string = useMemo(() => {
+    const type = roomTypeFor(pos.x, pos.y, 's-2025Q3');
+    const map: Record<string, string> = {
+      Empty: 'roomEmpty',
+      Trap: 'roomTrap',
+      Shop: 'roomShop',
+      Monster: 'roomMonster',
+      Treasure: 'roomTreasure',
+    };
+    return map[type];
+  }, [pos.x, pos.y]);
 
   const handleSend = useCallback((msg: string) => {
     setLog((l) => [...l, `[YOU] ${msg}`]);
@@ -47,12 +62,17 @@ function GamePortalInner() {
       <main id="game" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         {/* 수정 포인트(폭/높이/브레이크포인트): 씬 이미지는 컨테이너 내부, 고정 높이 */}
         <div className="w-full h-[40vh] mb-4">
-          <SceneImageSection changeKey={changeKey} variant="dungeonEntrance" className="w-full h-full" imageClassName="object-cover" />
+          <SceneImageSection changeKey={changeKey} variant={roomVariant} className="w-full h-full" imageClassName="object-cover" />
+        </div>
+        <div className="w-full mb-6">
+          <NarrationBar state={"Room.Explore"} context={{ roomName: roomVariant, torch: 100 }} />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_360px] gap-4">
           <section className="order-2 xl:order-1 space-y-4">
-            <GameMapCard />
+            <div>
+              <HudMini />
+            </div>
             <CharacterStatusCard />
           </section>
 

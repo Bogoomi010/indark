@@ -4,7 +4,8 @@ import { Flame, Shield, Swords, ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDo
 import { useI18n } from "../../../i18n/i18n";
 import type { Dir } from "../../../game/types";
 import { useLocalGame } from "../../../game/localGame";
-import HudMini from "../../HudMini";
+import { roomTypeFor } from "../../../game/room";
+import { ROOM_ACTIONS } from "../../../game/room-actions";
 
 const arrows: Array<{ dir: Dir; label: string; Icon: typeof ArrowUp }> = [
 	{ dir: 'N', label: '북', Icon: ArrowUp },
@@ -15,7 +16,9 @@ const arrows: Array<{ dir: Dir; label: string; Icon: typeof ArrowUp }> = [
 
 export function PlayerActionControls() {
 	const { t } = useI18n();
-	const { exits, move } = useLocalGame();
+	const { exits, move, pos, worldSeed } = useLocalGame();
+	const roomType = roomTypeFor(pos.x, pos.y, worldSeed);
+	const actions = ROOM_ACTIONS[roomType];
 
 	return (
 		<Card className="mt-3">
@@ -37,12 +40,20 @@ export function PlayerActionControls() {
 					})}
 				</div>
 				<div className="mt-0 flex items-start gap-2">
-					< HudMini />
 					<Button onClick={() => alert('준비중')} className="rounded-xl">
 						<BedDouble className="mr-2 w-4 h-4" />{t("controls.rest", { defaultValue: '쉬기' })}
 					</Button>
 				</div>
 			</div>
+			{actions?.length > 0 && (
+				<div className="mt-3 flex flex-wrap justify-center gap-2">
+					{actions.map((a, idx) => (
+						<Button key={`${a.label}-${idx}`} className="rounded-xl">
+							{a.label}
+						</Button>
+					))}
+				</div>
+			)}
 		</Card>
 	);
 }
