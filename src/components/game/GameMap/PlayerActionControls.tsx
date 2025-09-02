@@ -1,5 +1,6 @@
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
+import { useState } from "react";
 import { ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDouble } from "lucide-react";
 import type { Dir } from "../../../game/types";
 import { useLocalGame } from "../../../game/localGame";
@@ -14,6 +15,7 @@ const arrows: Array<{ dir: Dir; label: string; Icon: typeof ArrowUp }> = [
 
 export function PlayerActionControls() {
 	const { exits, move, pos, worldSeed } = useLocalGame();
+	const [showMoveForEmpty, setShowMoveForEmpty] = useState(false);
 	const roomType = roomTypeFor(pos.x, pos.y, worldSeed);
 
 	return (
@@ -44,6 +46,25 @@ export function PlayerActionControls() {
 						<Button className="rounded-xl" onClick={() => alert('쉬기: 준비중')}>
 							<BedDouble className="mr-2 w-4 h-4" />쉬기
 						</Button>
+						<Button className="rounded-xl" onClick={() => setShowMoveForEmpty((v) => !v)}>이동하기</Button>
+						{showMoveForEmpty && (
+							<>
+								{arrows.map(({ dir, label, Icon }) => {
+									const disabled = !exits[dir];
+									return (
+										<Button
+											key={dir}
+											title={disabled ? '출구가 닫혀 있습니다.' : undefined}
+											onClick={() => move(dir)}
+											disabled={disabled}
+											className="rounded-xl disabled:opacity-50"
+										>
+											<Icon className="mr-2 w-4 h-4" />{label}
+										</Button>
+									);
+								})}
+							</>
+						)}
 					</>
 				)}
 

@@ -1,9 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+
+    // 사용자 루트 문서
     match /users/{uid} {
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow read, update, delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if isOwner(uid);
+      allow read, update, delete: if isOwner(uid);
+
+      // 하위 경로: 예) users/{uid}/game/current 등 전체 허용
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
     }
   }
 }

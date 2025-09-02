@@ -15,14 +15,22 @@ import {
 } from "../components";
 import { GameLocalProvider, useLocalGame } from "../game/localGame";
 import { useAuth } from "../auth/AuthProvider";
+import { useEffect } from "react";
+import { useGameStore } from "../game/state";
+import { FirestorePositionRepo } from "../services/positionRepo.firestore";
 import { roomTypeFor } from "../game/room";
 import HudMini from "../components/HudMini";
 import { NarrationBar } from "../components/NarrationBar";
 
 export default function GamePortalPage() {
   const { user } = useAuth();
+  const init = useGameStore(s => s.init);
+  useEffect(() => {
+    const uid = user?.uid ?? 'anon';
+    void init(uid, new FirestorePositionRepo());
+  }, [user?.uid, init]);
   return (
-    <GameLocalProvider userId={user?.uid ?? 'anon'}>
+    <GameLocalProvider>
       <GamePortalInner />
     </GameLocalProvider>
   );

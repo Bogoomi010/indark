@@ -2,10 +2,11 @@ import type { Dir, CurrentDoc } from './types'
 import { moveCooldownMs, step } from './types'
 import { useGameStore } from './state'
 import { hasSTAForMove, hasTorch, isDoorLocked } from './guards'
-import { LocalStoragePositionRepo, type PositionRepo } from '../services/positionRepo'
+import type { PositionRepo } from '../services/positionRepo'
+import { FirestorePositionRepo } from '../services/positionRepo.firestore'
 
 export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: number; failSaveOnce?: boolean }) {
-  const repo = opts?.repo ?? new LocalStoragePositionRepo()
+  const repo = opts?.repo ?? new FirestorePositionRepo()
   const now = opts?.now ?? Date.now()
   const {
     userId,
@@ -38,6 +39,9 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     torch: torch - 1,
     sta: sta - 1,
     worldSeed,
+    hp: useGameStore.getState().hp,
+    mp: useGameStore.getState().mp,
+    cooldownUntil,
     updatedAt: now,
     version: 1,
   }
@@ -53,6 +57,8 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     await repo.saveCurrent(userId, optimistic)
     // 성공 → Explore 전이, 쿨다운 설정
     setState({ playerState: 'Room.Explore', cooldownUntil: now + moveCooldownMs, lastError: undefined })
+    // 쿨다운도 원격 반영(선택: 단일 저장으로 합칠 수도 있음)
+    await repo.saveCurrent(userId, { ...optimistic, cooldownUntil: now + moveCooldownMs })
   } catch (err) {
     // 롤백
     setState({ pos: prev.pos, torch: prev.torch, sta: prev.sta, playerState: 'Idle', lastError: (err as Error).message })

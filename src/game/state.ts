@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { CurrentDoc, Dir, PlayerState, Vec2 } from './types'
-import { defaultWorldSeed, initialSta, initialTorch } from './types'
-import { LocalStoragePositionRepo, type PositionRepo } from '../services/positionRepo'
+import { defaultWorldSeed, initialSta, initialTorch, initialHp, initialMp } from './types'
+import type { PositionRepo } from '../services/positionRepo'
+import { FirestorePositionRepo } from '../services/positionRepo.firestore'
 import { openExits } from './exits'
 
 export interface GameSlice {
@@ -12,6 +13,8 @@ export interface GameSlice {
   facing?: Dir
   torch: number
   sta: number
+  hp: number
+  mp: number
   worldSeed: string
   lastError?: string
   cooldownUntil: number
@@ -33,12 +36,14 @@ export const useGameStore = create<GameSlice>()(
     pos: defaultPos,
     torch: initialTorch,
     sta: initialSta,
+    hp: initialHp,
+    mp: initialMp,
     worldSeed: defaultWorldSeed,
     cooldownUntil: 0,
     exits: { N: true, E: true, S: true, W: true },
 
     async init(userId: string, repo?: PositionRepo) {
-      const effectiveRepo = repo ?? new LocalStoragePositionRepo()
+      const effectiveRepo = repo ?? new FirestorePositionRepo()
       const existing = await effectiveRepo.loadCurrent(userId)
       if (existing) {
         set({
@@ -47,7 +52,10 @@ export const useGameStore = create<GameSlice>()(
           facing: existing.facing,
           torch: existing.torch,
           sta: existing.sta,
+          hp: existing.hp,
+          mp: existing.mp,
           worldSeed: existing.worldSeed,
+          cooldownUntil: existing.cooldownUntil ?? 0,
           playerState: 'Idle',
           lastError: undefined,
         })
@@ -56,7 +64,10 @@ export const useGameStore = create<GameSlice>()(
           pos: defaultPos,
           torch: initialTorch,
           sta: initialSta,
+          hp: initialHp,
+          mp: initialMp,
           worldSeed: defaultWorldSeed,
+          cooldownUntil: 0,
           updatedAt: Date.now(),
           version: 1,
         }

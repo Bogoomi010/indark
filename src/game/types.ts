@@ -17,13 +17,18 @@ export interface CurrentDoc {
   facing?: Dir;
   torch: number;
   sta: number;
+  hp: number;
+  mp: number;
   worldSeed: string;
+  cooldownUntil: number;
   updatedAt: number;
   version: 1;
 }
 
 export const initialTorch = 100;
 export const initialSta = 100;
+export const initialHp = 100;
+export const initialMp = 50;
 export const defaultWorldSeed = 's-2025Q3';
 export const moveCooldownMs = 300;
 

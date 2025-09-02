@@ -30,8 +30,8 @@ export function CharacterStatusCard() {
 			<CardContent className="space-y-3 text-sm text-zinc-300">
 				<Stat label="HP" value={82} />
 				<Stat label="MP" value={56} />
-				<Stat label="STA" value={sta} max={15} barClass="bg-amber-500" />
-				<Stat label="TORCH" value={torch} max={15} barClass="bg-red-500" />
+				<Stat label="STA" value={sta} max={100} barClass="bg-amber-500" />
+				<Stat label="TORCH" value={torch} max={100} barClass="bg-red-500" />
 				<div className="flex flex-wrap gap-2 pt-1">
 					<Badge className="bg-zinc-800/80">{t("character.badge.coldRes")}</Badge>
 					<Badge className="bg-zinc-800/80">{t("character.badge.bleedImmune")}</Badge>

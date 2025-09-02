@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Crown, Download, Menu, Play, Globe, User as UserIcon } from "lucide-react";
+import { Crown, Download, Menu, Play, Globe, User as UserIcon, Settings, RotateCcw } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
 import { useI18n } from "../../../i18n/i18n";
@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/AuthProvider";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
+import { resetCharacter } from "../../../services/gameReset";
 
 interface HeaderProps { menuOpen: boolean; setMenuOpen: (v: boolean) => void; showActions?: boolean }
 
@@ -16,6 +17,7 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 	const { user, signOut } = useAuth();
 	const navigate = useNavigate();
 	const [nickname, setNickname] = useState<string | null>(null);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	useEffect(() => {
 		if (!user) {
@@ -49,6 +51,16 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 		signOut();
 		navigate("/login", { replace: true });
 	}, [signOut, navigate]);
+	const handleOpenSettings = useCallback(() => {
+		setSettingsOpen((v) => !v);
+	}, []);
+	const handleResetCharacter = useCallback(async () => {
+		if (!user) return;
+		const ok = window.confirm("캐릭터를 초기화하시겠습니까? 이 동작은 되돌릴 수 없습니다.");
+		if (!ok) return;
+		await resetCharacter(user.uid);
+		window.location.reload();
+	}, [user]);
 	return (
 		<header className="sticky top-0 z-40 backdrop-blur bg-zinc-950/80 border-b border-zinc-900">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -76,6 +88,18 @@ export function Header({ menuOpen, setMenuOpen, showActions = false }: HeaderPro
 							<button onClick={() => setLocale("de")} className="w-full text-left px-3 py-2 hover:bg-zinc-800">DE - Deutsch</button>
 						</div>
 					</details>
+				</div>
+				<div className="relative ml-2">
+					<button onClick={handleOpenSettings} className="rounded-2xl bg-zinc-800 hover:bg-zinc-700 px-2 py-1 text-xs font-display inline-flex items-center gap-1">
+						<Settings className="w-4 h-4" /> 설정
+					</button>
+					{settingsOpen && (
+						<div className="absolute right-0 mt-2 w-44 rounded-md border border-zinc-800 bg-zinc-900 shadow-lg text-xs p-2">
+							<button onClick={handleResetCharacter} className="w-full text-left px-2 py-2 hover:bg-zinc-800 rounded-md inline-flex items-center gap-2">
+								<RotateCcw className="w-4 h-4" /> 캐릭터 초기화
+							</button>
+						</div>
+					)}
 				</div>
 				<div className="hidden md:flex items-center gap-2">
 					{!user ? (
