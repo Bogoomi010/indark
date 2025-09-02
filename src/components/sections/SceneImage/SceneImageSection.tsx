@@ -1,19 +1,49 @@
 import { Card } from "../../ui/Card";
 import { cx } from "../../../utils/classNames";
 import { useEffect, useRef, useState } from "react";
+import { useLocalGame } from "../../../game/localGame";
+import { monsterKindFor } from "../../../game/room";
 
+// 단일 프리셋(하위 호환): 특정 키에 대해 고정 이미지
 const IMAGE_PRESETS: Record<string, { src: string; alt: string }> = {
 	// 기본 프리셋: 필요 시 이곳에 시나리오별 이미지를 추가하세요
 	dungeonEntrance: {
 		src: "/dungeon-entrance.png",
 		alt: "어두운 미궁 입구를 밝히는 횃불",
 	},
-	roomEmpty: { src: "/img_explore.png", alt: "텅 빈 방" },
+	roomEmpty: { src: "/img_room_empty.png", alt: "텅 빈 방" },
 	roomMonster: { src: "/img_combat01.png", alt: "괴물이 있는 방" },
 	roomTrap: { src: "/img_combat02.png", alt: "함정이 있는 방" },
 	roomShop: { src: "/img_game_start.png", alt: "상점 방" },
 	roomTreasure: { src: "/img_get_rat.png", alt: "보물 방" },
 };
+
+// 방 타입별 다중 이미지(몬스터/트랩/보물 등 서브타입): 배열에서 결정적으로 하나 선택
+const IMAGE_VARIANTS: Record<string, Array<{ src: string; alt: string }>> = {
+	roomMonster: [
+		{ src: "/img_combat_skeleton.png", alt: "몬스터: 유형 A" },
+		{ src: "/img_combat_devil.png", alt: "몬스터: 유형 B" },
+		{ src: "/img_combat_spider.png", alt: "몬스터: 유형 C" },
+	],
+	roomTrap: [
+		{ src: "/img_combat02.png", alt: "함정: 유형 A" },
+		{ src: "/img_combat03.png", alt: "함정: 유형 B" },
+	],
+	roomTreasure: [
+		{ src: "/img_get_rat.png", alt: "보물: 유형 A" },
+		{ src: "/img_get_food01.png", alt: "보물: 유형 B" },
+		{ src: "/img_get_rat_alive.png", alt: "보물: 유형 C" },
+	],
+};
+
+function hashString(input: string): number {
+	let h = 2166136261 >>> 0;
+	for (let i = 0; i < input.length; i++) {
+		h ^= input.charCodeAt(i);
+		h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+	}
+	return h >>> 0;
+}
 
 export interface SceneImageSectionProps {
 	/** 사전에 정의된 프리셋 키 (예: "dungeonEntrance") */
@@ -31,9 +61,39 @@ export interface SceneImageSectionProps {
 }
 
 export function SceneImageSection({ variant, src, alt, className, imageClassName, changeKey }: SceneImageSectionProps) {
-	const preset = variant ? IMAGE_PRESETS[String(variant)] : undefined;
-	const finalSrc = src ?? preset?.src ?? "";
-	const finalAlt = alt ?? preset?.alt ?? "";
+	// variant가 IMAGE_VARIANTS에 존재하면 changeKey를 씨드로 결정적으로 선택
+	const vKey = variant ? String(variant) : undefined;
+	let resolved: { src: string; alt: string } | undefined = undefined;
+
+	// 특수 규칙: roomEmpty는 TORCH 게이지에 따라 이미지 분기
+	const { torch, pos, worldSeed } = useLocalGame();
+	if (vKey === 'roomEmpty') {
+		resolved = {
+			src: torch > 0 ? "/img_room_empty.png" : "/img_room_empty_no_torch.png",
+			alt: torch > 0 ? "텅 빈 방" : "횃불이 꺼진 텅 빈 방",
+		};
+	}
+
+	if (!resolved && vKey && IMAGE_VARIANTS[vKey]?.length) {
+		// 몬스터 방은 좌표/시드 기반 결정적 서브타입을 사용해 인덱스 고정
+		if (vKey === 'roomMonster') {
+			const kind = monsterKindFor(pos.x, pos.y, worldSeed);
+			const map: Record<string, number> = { skeleton: 0, devil: 1, spider: 2 };
+			const idx = map[kind] ?? 0;
+			resolved = IMAGE_VARIANTS[vKey][idx];
+		} else {
+		const arr = IMAGE_VARIANTS[vKey];
+		const seed = `${vKey}:${String(changeKey ?? "")}`;
+		const idx = arr.length > 0 ? hashString(seed) % arr.length : 0;
+		resolved = arr[idx];
+		}
+	}
+
+	// 다중 이미지가 아니면 단일 프리셋으로 처리
+	const preset = !resolved && vKey ? IMAGE_PRESETS[vKey] : undefined;
+
+	const finalSrc = src ?? resolved?.src ?? preset?.src ?? "";
+	const finalAlt = alt ?? resolved?.alt ?? preset?.alt ?? "";
 
 	const [visibleSrc, setVisibleSrc] = useState(finalSrc);
 	const [fade, setFade] = useState<'in' | 'out'>('in');

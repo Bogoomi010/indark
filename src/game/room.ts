@@ -23,4 +23,14 @@ export function roomTypeFor(x: number, y: number, seed: string): RoomType {
   return 'Treasure'
 }
 
+// 몬스터 서브타입(결정적 선택)
+export type MonsterKind = 'skeleton' | 'devil' | 'spider'
+
+export function monsterKindFor(x: number, y: number, seed: string): MonsterKind {
+  const roll = hashString(`${seed}:${x},${y}:monster.kind`) % 3
+  if (roll === 0) return 'skeleton'
+  if (roll === 1) return 'devil'
+  return 'spider'
+}
+
 
