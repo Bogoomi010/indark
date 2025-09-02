@@ -1,11 +1,11 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react'
-import type { Dir } from './types'
+import type { Dir, Vec2 } from './types'
 import { useGameStore } from './state'
 import { tryMove } from './flow'
 import { FirestorePositionRepo } from '../services/positionRepo.firestore'
 
 type LocalGameValue = {
-  pos: ReturnType<typeof useGameStore>['pos']
+  pos: Vec2
   worldSeed: string
   exits: { N: boolean; E: boolean; S: boolean; W: boolean }
   move: (dir: Dir) => void
