@@ -16,7 +16,6 @@ describe('openExits', () => {
   it('양방향 일치(N<->S, E<->W)', () => {
     const r = openExits(3, 5, 'seed-3')
     const rSouthNeighbor = openExits(3, 6, 'seed-3')
-    const rEastNeighbor = openExits(4, 5, 'seed-3')
     // N(3,5) == S(3,4+1) => S of south neighbor is NOT correct; per rule we defined:
     // S(3,5) == N(3,6) and W(3,5) == E(2,5)
     expect(r.S).toBe(rSouthNeighbor.N)

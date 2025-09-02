@@ -27,7 +27,7 @@ export interface GameSlice {
 const defaultPos: Vec2 = { x: 0, y: 0 }
 
 export const useGameStore = create<GameSlice>()(
-  devtools((set, get) => ({
+  devtools((set: (partial: Partial<GameSlice> | ((state: GameSlice) => Partial<GameSlice>)) => void, get: () => GameSlice) => ({
     userId: 'mock-user',
     playerState: 'Idle',
     pos: defaultPos,
@@ -66,7 +66,7 @@ export const useGameStore = create<GameSlice>()(
       get().refreshExits()
     },
 
-    setState(s) {
+    setState(s: Partial<GameSlice>) {
       set(s)
     },
 

@@ -1,6 +1,6 @@
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
-import { Flame, Shield, Swords, ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDouble } from "lucide-react";
+import { ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDouble } from "lucide-react";
 import { useI18n } from "../../../i18n/i18n";
 import type { Dir } from "../../../game/types";
 import { useLocalGame } from "../../../game/localGame";
@@ -41,7 +41,7 @@ export function PlayerActionControls() {
 				</div>
 				<div className="mt-0 flex items-start gap-2">
 					<Button onClick={() => alert('준비중')} className="rounded-xl">
-						<BedDouble className="mr-2 w-4 h-4" />{t("controls.rest", { defaultValue: '쉬기' })}
+						<BedDouble className="mr-2 w-4 h-4" />{t("controls.rest")}
 					</Button>
 				</div>
 			</div>
