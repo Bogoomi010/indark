@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useGameStore } from "../game/state";
 import type { PlayerState as State } from "../game/types";
 
 type Context = Partial<{
@@ -8,6 +9,8 @@ type Context = Partial<{
   sta: number;
   torch: number;     // 0~100
   danger: boolean;
+  // 세션 시작/재시작 연출을 위한 힌트
+  sessionStartKind: 'start' | 'restart';
 }>;
 
 type Props = {
@@ -20,12 +23,32 @@ type Props = {
   className?: string;
 };
 
+function pickRandom(messages: string[]): string {
+  if (messages.length === 0) return ''
+  const idx = Math.floor(Math.random() * messages.length)
+  return messages[idx]
+}
+
 const stateLines = (state: State, ctx: Context = {}): string => {
   const { roomName, hp, sta, torch, danger } = ctx;
 
+  // 세션 시작/재시작: 어떤 state든 우선적으로 시작/재시작 문구를 1회 노출하고 싶을 때 사용
+  if (ctx.sessionStartKind === 'start') {
+    return pickRandom([
+      '차가운 바닥 위, 몸을 웅크린 채 의식을 되찾는다.',
+      '얼어붙은 공기 속에서 눈을 뜨자, 낯선 미궁의 천장이 보인다.',
+    ])
+  }
+  if (ctx.sessionStartKind === 'restart') {
+    return pickRandom([
+      '모닥불 앞, 움츠린 채 잠들어 있던 몸이 천천히 일어난다.',
+      '불씨가 꺼져가는 소리를 들으며, 다시 눈을 뜬다.',
+    ])
+  }
+
   switch (state) {
     case "Idle":
-      return `모험가는 ${roomName ?? "어두운 방"} 한가운데서 숨을 고른다.`;
+      return `모험가는 방 한가운데서 숨을 고른다.`;
     case "Move.Select":
       return `갈림길 앞. 어느 문을 택할 것인가? (동/서/남/북)`;
     case "Move.Entering":
@@ -39,7 +62,11 @@ const stateLines = (state: State, ctx: Context = {}): string => {
     case "Combat":
       return `그림자 속에서 적이 모습을 드러낸다. 자세를 가다듬어라.`;
     case "Resting":
-      return `잠시 숨을 고른다. [HP ${hp ?? "?"}] [STA ${sta ?? "?"}] [Torch ${torch ?? "?"}%]`;
+      return pickRandom([
+        '횃불을 벽에 걸어두고, 차가운 돌벽에 등을 기댄다.',
+        '한숨 돌리며 고개를 젖히자, 돌천장에서 물방울이 뚝뚝 떨어진다.',
+        `잠시 숨을 고른다. [HP ${hp ?? "?"}] [STA ${sta ?? "?"}] [Torch ${torch ?? "?"}%]`,
+      ]);
     case "GameOver":
       return `불빛이 사그라든다. 미궁은 또 한 명의 방랑자를 삼켰다.`;
     default:
@@ -54,10 +81,27 @@ export function NarrationBar({
   typingMs = 14,
   className = "",
 }: Props) {
-  const targetText = useMemo(
-    () => (override && override.trim().length > 0 ? override : stateLines(state, context)),
-    [override, state, context]
-  );
+  // 재시작 시 나레이션 1회성 표기를 위해 전역 상태(sessionStartKind)도 참조
+  const storeSessionStartKind = useGameStore(s => s.sessionStartKind);
+  const playerStateFromStore = useGameStore(s => s.playerState);
+  const startOnceRef = useRef(false);
+
+  const effectiveSessionStartKind = context?.sessionStartKind ?? storeSessionStartKind;
+  const sessionStartForThisRender = !startOnceRef.current ? effectiveSessionStartKind : undefined;
+
+  const targetText = useMemo(() => {
+    if (override && override.trim().length > 0) return override;
+    const merged = { ...context, sessionStartKind: sessionStartForThisRender } as typeof context;
+    const effectiveState = playerStateFromStore ?? state;
+    return stateLines(effectiveState, merged);
+  }, [override, state, context, sessionStartForThisRender, playerStateFromStore]);
+
+  // 시작/재시작 문구는 한 번만 사용
+  useEffect(() => {
+    if (sessionStartForThisRender) {
+      startOnceRef.current = true;
+    }
+  }, [sessionStartForThisRender]);
 
   const [display, setDisplay] = useState("");
   const [isTyping, setIsTyping] = useState(false);

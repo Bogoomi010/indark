@@ -4,6 +4,7 @@ import { useGameStore } from './state'
 import { hasSTAForMove, hasTorch, isDoorLocked } from './guards'
 import type { PositionRepo } from '../services/positionRepo'
 import { FirestorePositionRepo } from '../services/positionRepo.firestore'
+import { roomTypeFor } from './room'
 
 export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: number; failSaveOnce?: boolean }) {
   const repo = opts?.repo ?? new FirestorePositionRepo()
@@ -18,6 +19,7 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     cooldownUntil,
     setState,
     refreshExits,
+    markRoomVisited,
   } = useGameStore.getState()
 
   if (playerState !== 'Idle') return
@@ -57,6 +59,17 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     await repo.saveCurrent(userId, optimistic)
     // 성공 → Explore 전이, 쿨다운 설정
     setState({ playerState: 'Room.Explore', cooldownUntil: now + moveCooldownMs, lastError: undefined })
+    // 새로운 방에 처음 들어왔을 때만 로그
+    try {
+      const current = useGameStore.getState()
+      const key = `${current.pos.x},${current.pos.y}`
+      if (!current.visitedRooms[key]) {
+        const roomType = roomTypeFor(current.pos.x, current.pos.y, current.worldSeed)
+        // eslint-disable-next-line no-console
+        console.log(`[InDark] Entered new room → type=${roomType}, state=${current.playerState}`)
+        markRoomVisited(current.pos)
+      }
+    } catch {}
     // 쿨다운도 원격 반영(선택: 단일 저장으로 합칠 수도 있음)
     await repo.saveCurrent(userId, { ...optimistic, cooldownUntil: now + moveCooldownMs })
   } catch (err) {

@@ -3,6 +3,8 @@ export type Vec2 = { x: number; y: number };
 export type Dir = 'N' | 'E' | 'S' | 'W';
 
 export type PlayerState =
+  | 'Game.Start'
+  | 'Game.Restart'
   | 'Idle'
   | 'Move.Select'
   | 'Move.Entering'

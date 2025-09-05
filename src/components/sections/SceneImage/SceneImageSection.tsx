@@ -2,6 +2,7 @@ import { Card } from "../../ui/Card";
 import { cx } from "../../../utils/classNames";
 import { useEffect, useRef, useState } from "react";
 import { useLocalGame } from "../../../game/localGame";
+import { useGameStore } from "../../../game/state";
 import { monsterKindFor } from "../../../game/room";
 
 // 단일 프리셋(하위 호환): 특정 키에 대해 고정 이미지
@@ -13,7 +14,7 @@ const IMAGE_PRESETS: Record<string, { src: string; alt: string }> = {
 	},
 	roomEmpty: { src: "/img_room_empty.png", alt: "텅 빈 방" },
 	roomMonster: { src: "/img_combat01.png", alt: "괴물이 있는 방" },
-	roomTrap: { src: "/img_combat02.png", alt: "함정이 있는 방" },
+	roomTrap: { src: "/img_room_trap.png", alt: "함정이 있는 방" },
 	roomShop: { src: "/img_game_start.png", alt: "상점 방" },
 	roomTreasure: { src: "/img_get_rat.png", alt: "보물 방" },
 };
@@ -26,8 +27,7 @@ const IMAGE_VARIANTS: Record<string, Array<{ src: string; alt: string }>> = {
 		{ src: "/img_combat_spider.png", alt: "몬스터: 유형 C" },
 	],
 	roomTrap: [
-		{ src: "/img_combat02.png", alt: "함정: 유형 A" },
-		{ src: "/img_combat03.png", alt: "함정: 유형 B" },
+		{ src: "/img_room_trap.png", alt: "함정: 유형 A" },
 	],
 	roomTreasure: [
 		{ src: "/img_get_rat.png", alt: "보물: 유형 A" },
@@ -67,6 +67,16 @@ export function SceneImageSection({ variant, src, alt, className, imageClassName
 
 	// 특수 규칙: roomEmpty는 TORCH 게이지에 따라 이미지 분기
 	const { torch, pos, worldSeed } = useLocalGame();
+	const playerState = useGameStore(s => s.playerState);
+
+	// 최우선 규칙: 플레이어 상태가 시작/재시작이면 1회 우선 표시 (좌표 무관)
+	if (!resolved) {
+		if (playerState === 'Game.Start') {
+			resolved = { src: "/img_game_start.png", alt: "게임 시작" };
+		} else if (playerState === 'Game.Restart') {
+			resolved = { src: "/img_game_restart.png", alt: "게임 재시작" };
+		}
+	}
 	if (vKey === 'roomEmpty') {
 		resolved = {
 			src: torch > 0 ? "/img_room_empty.png" : "/img_room_empty_no_torch.png",

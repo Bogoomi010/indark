@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   Header,
-  Hero,
   Marquee,
   NewsSection,
   SceneImageSection,
@@ -43,10 +42,10 @@ function GamePortalInner() {
     "[TIP] 적의 뒤를 잡으면 추가 피해를 입힙니다.",
     "[LOOT] 오래된 상자에서 '녹슨 열쇠'를 획득!",
   ]);
-  const { pos } = useLocalGame();
+  const { pos, worldSeed } = useLocalGame();
   const changeKey = useMemo(() => `${pos.x},${pos.y}`,[pos.x,pos.y]);
   const roomVariant: string = useMemo(() => {
-    const type = roomTypeFor(pos.x, pos.y, 's-2025Q3');
+    const type = roomTypeFor(pos.x, pos.y, worldSeed);
     const map: Record<string, string> = {
       Empty: 'roomEmpty',
       Trap: 'roomTrap',
@@ -55,7 +54,7 @@ function GamePortalInner() {
       Treasure: 'roomTreasure',
     };
     return map[type];
-  }, [pos.x, pos.y]);
+  }, [pos.x, pos.y, worldSeed]);
 
   const handleSend = useCallback((msg: string) => {
     setLog((l) => [...l, `[YOU] ${msg}`]);
@@ -64,7 +63,6 @@ function GamePortalInner() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-zinc-950 via-black to-black text-zinc-100 font-body">
       <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      <Hero />
       <Marquee />
 
       <main id="game" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">

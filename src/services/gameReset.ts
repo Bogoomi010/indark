@@ -16,6 +16,10 @@ export async function resetCharacter(userId: string): Promise<void> {
     version: 1,
   }
   await repo.saveCurrent(userId, doc)
+  // 다음 앱 로드에서 "처음 시작" 이미지가 1회 노출되도록 플래그 저장
+  if (typeof window !== 'undefined') {
+    try { window.localStorage.setItem('indark_just_reset', '1') } catch {}
+  }
 }
 
 
