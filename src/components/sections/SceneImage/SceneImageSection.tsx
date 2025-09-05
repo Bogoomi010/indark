@@ -12,7 +12,7 @@ const IMAGE_PRESETS: Record<string, { src: string; alt: string }> = {
 		src: "/dungeon-entrance.png",
 		alt: "어두운 미궁 입구를 밝히는 횃불",
 	},
-	roomEmpty: { src: "/img_room_empty.png", alt: "텅 빈 방" },
+	roomEmpty: { src: "/img_explore.png", alt: "텅 빈 방" },
 	roomMonster: { src: "/img_combat01.png", alt: "괴물이 있는 방" },
 	roomTrap: { src: "/img_room_trap.png", alt: "함정이 있는 방" },
 	roomShop: { src: "/img_game_start.png", alt: "상점 방" },
@@ -74,12 +74,13 @@ export function SceneImageSection({ variant, src, alt, className, imageClassName
 		if (playerState === 'Game.Start') {
 			resolved = { src: "/img_game_start.png", alt: "게임 시작" };
 		} else if (playerState === 'Game.Restart') {
+			// 재시작 이미지는 별도 리소스가 없으므로 시작 이미지로 통일
 			resolved = { src: "/img_game_restart.png", alt: "게임 재시작" };
 		}
 	}
-	if (vKey === 'roomEmpty') {
+	if (!resolved && vKey === 'roomEmpty') {
 		resolved = {
-			src: torch > 0 ? "/img_room_empty.png" : "/img_room_empty_no_torch.png",
+			src: "/img_explore.png",
 			alt: torch > 0 ? "텅 빈 방" : "횃불이 꺼진 텅 빈 방",
 		};
 	}

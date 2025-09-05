@@ -66,7 +66,7 @@ const stateLines = (state: State, ctx: Context = {}): string => {
     case "Idle":
       return `모험가는 방 한가운데서 숨을 고른다.`;
     case "Move.Select":
-      return `갈림길 앞. 어느 문을 택할 것인가? (동/서/남/북)`;
+      return `발걸음을 옮길 방향을 정해야 한다.`;
     case "Move.Entering":
       {
         const rt = resolveRoomType(ctx)

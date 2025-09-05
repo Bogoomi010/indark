@@ -24,6 +24,10 @@ export interface GameSlice {
   sessionStartKind?: 'start' | 'restart'
   // 세션 동안 방문한 방 좌표 집합 (비영속)
   visitedRooms: Record<string, boolean>
+  // 씬 이미지를 임시로 덮어쓰는 경로 (예: 이동 중 연출)
+  tempSceneSrc?: string
+  // 방별 이벤트 트리거 상태 (true: 이벤트 활성, false: 종료됨)
+  roomEventOn: Record<string, boolean>
 
   // actions
   init(userId: string, repo?: PositionRepo): Promise<void>
@@ -47,6 +51,8 @@ export const useGameStore = create<GameSlice>()(
     cooldownUntil: 0,
     exits: { N: true, E: true, S: true, W: true },
     visitedRooms: { [`${defaultPos.x},${defaultPos.y}`]: true },
+    tempSceneSrc: undefined,
+    roomEventOn: {},
 
     async init(userId: string, repo?: PositionRepo) {
       const effectiveRepo = repo ?? new FirestorePositionRepo()
@@ -82,7 +88,9 @@ export const useGameStore = create<GameSlice>()(
           version: 1,
         }
         await effectiveRepo.saveCurrent(userId, doc)
-        set({ userId, ...doc, playerState: 'Game.Start', sessionStartKind: 'start' })
+        // 최초 시작: 시작 방의 이벤트는 비활성(false)로 시작한다 → Empty처럼 보임
+        const startKey = `${doc.pos.x},${doc.pos.y}`
+        set({ userId, ...doc, playerState: 'Game.Start', sessionStartKind: 'start', roomEventOn: { [startKey]: false } })
       }
       if (resetFlag && typeof window !== 'undefined') {
         try { window.localStorage.removeItem('indark_just_reset') } catch {}

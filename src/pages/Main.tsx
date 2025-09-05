@@ -17,7 +17,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../game/state";
 import { FirestorePositionRepo } from "../services/positionRepo.firestore";
-import { roomTypeFor } from "../game/room";
+import { effectiveRoomTypeFor } from "../game/room";
 import HudMini from "../components/HudMini";
 import { NarrationBar } from "../components/NarrationBar";
 
@@ -44,10 +44,13 @@ function GamePortalInner() {
   ]);
   const { pos, worldSeed } = useLocalGame();
   const playerState = useGameStore(s => s.playerState);
+  const tempSceneSrc = useGameStore(s => s.tempSceneSrc);
+  const roomEventOn = useGameStore(s => s.roomEventOn);
   const loggedCurrentOnceRef = useRef(false);
   const changeKey = useMemo(() => `${pos.x},${pos.y}`,[pos.x,pos.y]);
   const roomVariant: string = useMemo(() => {
-    const type = roomTypeFor(pos.x, pos.y, worldSeed);
+    const eventOn = roomEventOn[`${pos.x},${pos.y}`];
+    const type = effectiveRoomTypeFor(pos.x, pos.y, worldSeed, eventOn);
     const map: Record<string, string> = {
       Empty: 'roomEmpty',
       Trap: 'roomTrap',
@@ -56,12 +59,13 @@ function GamePortalInner() {
       Treasure: 'roomTreasure',
     };
     return map[type];
-  }, [pos.x, pos.y, worldSeed]);
+  }, [pos.x, pos.y, worldSeed, roomEventOn]);
 
   // 앱 진입 직후 현재 방 정보도 터미널로 1회 로깅
   useEffect(() => {
     if (loggedCurrentOnceRef.current) return;
-    const type = roomTypeFor(pos.x, pos.y, worldSeed);
+    const eventOn = roomEventOn[`${pos.x},${pos.y}`];
+    const type = effectiveRoomTypeFor(pos.x, pos.y, worldSeed, eventOn);
     try {
       // eslint-disable-next-line no-console
       console.log(`[InDark] Current room → type=${type}, state=${playerState}`);
@@ -87,7 +91,7 @@ function GamePortalInner() {
       <main id="game" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         {/* 수정 포인트(폭/높이/브레이크포인트): 씬 이미지는 컨테이너 내부, 고정 높이 */}
         <div className="w-full h-[40vh] mb-4">
-          <SceneImageSection changeKey={changeKey} variant={roomVariant} className="w-full h-full" imageClassName="object-cover" />
+          <SceneImageSection src={tempSceneSrc} changeKey={changeKey} variant={roomVariant} className="w-full h-full" imageClassName="object-cover" />
         </div>
         <div className="w-full mb-6">
           <NarrationBar state={"Room.Explore"} context={{ roomName: roomVariant, torch: 100 }} />

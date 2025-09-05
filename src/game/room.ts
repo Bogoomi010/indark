@@ -33,4 +33,16 @@ export function monsterKindFor(x: number, y: number, seed: string): MonsterKind 
   return 'spider'
 }
 
+// 이벤트 상태(roomEventOn)에 따라 실효 방 타입을 계산한다
+// eventOn === false 이면 어떤 타입이든 'Empty' 로 간주한다.
+export function effectiveRoomTypeFor(
+  x: number,
+  y: number,
+  seed: string,
+  eventOn: boolean | undefined,
+): RoomType {
+  if (eventOn === false) return 'Empty'
+  return roomTypeFor(x, y, seed)
+}
+
 

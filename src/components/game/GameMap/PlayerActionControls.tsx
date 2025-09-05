@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDouble } from "lucide-react";
 import type { Dir } from "../../../game/types";
 import { useLocalGame } from "../../../game/localGame";
-import { roomTypeFor } from "../../../game/room";
+import { effectiveRoomTypeFor } from "../../../game/room";
+import { useGameStore } from "../../../game/state";
 
 const arrows: Array<{ dir: Dir; label: string; Icon: typeof ArrowUp }> = [
 	{ dir: 'N', label: '북', Icon: ArrowUp },
@@ -15,43 +16,49 @@ const arrows: Array<{ dir: Dir; label: string; Icon: typeof ArrowUp }> = [
 
 export function PlayerActionControls() {
 	const { exits, move, pos, worldSeed } = useLocalGame();
-	const [showMoveForEmpty, setShowMoveForEmpty] = useState(false);
-	const roomType = roomTypeFor(pos.x, pos.y, worldSeed);
+	const [showMove, setShowMove] = useState(false);
+	const roomEventOn = useGameStore(s => s.roomEventOn);
+	const roomType = effectiveRoomTypeFor(pos.x, pos.y, worldSeed, roomEventOn[`${pos.x},${pos.y}`]);
+	const playerState = useGameStore(s => s.playerState);
+	const setGameState = useGameStore(s => s.setState);
+	const isStart = playerState === 'Game.Start' || playerState === 'Game.Restart';
 
 	return (
 		<Card className="mt-3">
 			<div className="flex flex-wrap justify-center gap-2">
+				{/* 게임 시작/재시작 상태: 방 타입 무시, 이동하기 -> 방향 버튼 노출, 출구 무시 */}
+				{isStart && (
+					<>
+						{!showMove && (
+							<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
+						)}
+						{showMove && (
+							<>
+								{arrows.map(({ dir, label, Icon }) => (
+									<Button
+										key={dir}
+										onClick={() => { setGameState({ playerState: 'Idle', tempSceneSrc: undefined }); move(dir); }}
+										className="rounded-xl"
+									>
+										<Icon className="mr-2 w-4 h-4" />{label}
+									</Button>
+								))}
+								<Button className="rounded-xl" onClick={() => { setShowMove(false); setGameState({ tempSceneSrc: undefined, playerState: 'Idle' }); }}>이전</Button>
+							</>
+						)}
+					</>
+				)}
+
+				{!isStart && (() => {
 				{/* 방 타입별로 하나의 버튼 세트만 렌더 */}
-				{(() => {
 					switch (roomType) {
 						case 'Trap':
 							return (
 								<>
-									{arrows.map(({ dir, label, Icon }) => {
-										const disabled = !exits[dir];
-										return (
-											<Button
-												key={dir}
-												title={disabled ? '출구가 닫혀 있습니다.' : undefined}
-												onClick={() => move(dir)}
-												disabled={disabled}
-												className="rounded-xl disabled:opacity-50"
-											>
-												<Icon className="mr-2 w-4 h-4" />{label}
-											</Button>
-										);
-									})}
-								</>
-							);
-						case 'Empty':
-							return (
-								<>
-									<Button className="rounded-xl" onClick={() => alert('살펴보기: 준비중')}>살펴보기</Button>
-									<Button className="rounded-xl" onClick={() => alert('쉬기: 준비중')}>
-										<BedDouble className="mr-2 w-4 h-4" />쉬기
-									</Button>
-									<Button className="rounded-xl" onClick={() => setShowMoveForEmpty((v) => !v)}>이동하기</Button>
-									{showMoveForEmpty && (
+									{!showMove && (
+										<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
+									)}
+									{showMove && (
 										<>
 											{arrows.map(({ dir, label, Icon }) => {
 												const disabled = !exits[dir];
@@ -59,7 +66,7 @@ export function PlayerActionControls() {
 													<Button
 														key={dir}
 														title={disabled ? '출구가 닫혀 있습니다.' : undefined}
-														onClick={() => move(dir)}
+														onClick={() => { setGameState({ tempSceneSrc: undefined }); move(dir); }}
 														disabled={disabled}
 														className="rounded-xl disabled:opacity-50"
 													>
@@ -67,6 +74,40 @@ export function PlayerActionControls() {
 													</Button>
 												);
 											})}
+											<Button className="rounded-xl" onClick={() => { setShowMove(false); setGameState({ tempSceneSrc: undefined, playerState: 'Idle' }); }}>이전</Button>
+										</>
+									)}
+								</>
+							);
+						case 'Empty':
+							return (
+								<>
+									{!showMove && (
+										<>
+											<Button className="rounded-xl" onClick={() => alert('살펴보기: 준비중')}>살펴보기</Button>
+											<Button className="rounded-xl" onClick={() => alert('쉬기: 준비중')}>
+												<BedDouble className="mr-2 w-4 h-4" />쉬기
+											</Button>
+											<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
+										</>
+									)}
+									{showMove && (
+										<>
+											{arrows.map(({ dir, label, Icon }) => {
+												const disabled = !exits[dir];
+												return (
+													<Button
+														key={dir}
+														title={disabled ? '출구가 닫혀 있습니다.' : undefined}
+														onClick={() => { setGameState({ tempSceneSrc: undefined }); move(dir); }}
+														disabled={disabled}
+														className="rounded-xl disabled:opacity-50"
+													>
+														<Icon className="mr-2 w-4 h-4" />{label}
+													</Button>
+												);
+											})}
+											<Button className="rounded-xl" onClick={() => { setShowMove(false); setGameState({ tempSceneSrc: undefined, playerState: 'Idle' }); }}>이전</Button>
 										</>
 									)}
 								</>
