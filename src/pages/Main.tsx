@@ -14,7 +14,7 @@ import {
 } from "../components";
 import { GameLocalProvider, useLocalGame } from "../game/localGame";
 import { useAuth } from "../auth/AuthProvider";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useGameStore } from "../game/state";
 import { FirestorePositionRepo } from "../services/positionRepo.firestore";
 import { roomTypeFor } from "../game/room";
@@ -43,6 +43,8 @@ function GamePortalInner() {
     "[LOOT] 오래된 상자에서 '녹슨 열쇠'를 획득!",
   ]);
   const { pos, worldSeed } = useLocalGame();
+  const playerState = useGameStore(s => s.playerState);
+  const loggedCurrentOnceRef = useRef(false);
   const changeKey = useMemo(() => `${pos.x},${pos.y}`,[pos.x,pos.y]);
   const roomVariant: string = useMemo(() => {
     const type = roomTypeFor(pos.x, pos.y, worldSeed);
@@ -55,6 +57,23 @@ function GamePortalInner() {
     };
     return map[type];
   }, [pos.x, pos.y, worldSeed]);
+
+  // 앱 진입 직후 현재 방 정보도 터미널로 1회 로깅
+  useEffect(() => {
+    if (loggedCurrentOnceRef.current) return;
+    const type = roomTypeFor(pos.x, pos.y, worldSeed);
+    try {
+      // eslint-disable-next-line no-console
+      console.log(`[InDark] Current room → type=${type}, state=${playerState}`);
+      fetch('/__indark-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag: 'current-room', payload: { roomType: type, playerState, pos } }),
+      }).catch(() => {});
+    } finally {
+      loggedCurrentOnceRef.current = true;
+    }
+  }, [pos.x, pos.y, worldSeed, playerState]);
 
   const handleSend = useCallback((msg: string) => {
     setLog((l) => [...l, `[YOU] ${msg}`]);

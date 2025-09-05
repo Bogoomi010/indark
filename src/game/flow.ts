@@ -65,8 +65,15 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
       const key = `${current.pos.x},${current.pos.y}`
       if (!current.visitedRooms[key]) {
         const roomType = roomTypeFor(current.pos.x, current.pos.y, current.worldSeed)
+        // 브라우저 콘솔 로그
         // eslint-disable-next-line no-console
         console.log(`[InDark] Entered new room → type=${roomType}, state=${current.playerState}`)
+        // 터미널로도 포워딩 (개발 서버에서만 동작)
+        fetch('/__indark-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag: 'entered-room', payload: { roomType, playerState: current.playerState, pos: current.pos } }),
+        }).catch(() => {})
         markRoomVisited(current.pos)
       }
     } catch {}

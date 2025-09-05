@@ -4,6 +4,7 @@ import type { PlayerState as State } from "../game/types";
 
 type Context = Partial<{
   roomName: string;
+  roomType: 'Empty' | 'Trap' | 'Treasure' | 'Monster' | 'Shop';
   hp: number;
   mp: number;
   sta: number;
@@ -29,30 +30,73 @@ function pickRandom(messages: string[]): string {
   return messages[idx]
 }
 
+function resolveRoomType(ctx: Context): Context['roomType'] | undefined {
+  if (ctx.roomType) return ctx.roomType
+  const key = ctx.roomName
+  switch (key) {
+    case 'roomEmpty':
+      return 'Empty'
+    case 'roomTrap':
+      return 'Trap'
+    case 'roomTreasure':
+      return 'Treasure'
+    case 'roomMonster':
+      return 'Monster'
+    case 'roomShop':
+      return 'Shop'
+    default:
+      return undefined
+  }
+}
+
 const stateLines = (state: State, ctx: Context = {}): string => {
   const { roomName, hp, sta, torch, danger } = ctx;
 
-  // 세션 시작/재시작: 어떤 state든 우선적으로 시작/재시작 문구를 1회 노출하고 싶을 때 사용
-  if (ctx.sessionStartKind === 'start') {
-    return pickRandom([
-      '차가운 바닥 위, 몸을 웅크린 채 의식을 되찾는다.',
-      '얼어붙은 공기 속에서 눈을 뜨자, 낯선 미궁의 천장이 보인다.',
-    ])
-  }
-  if (ctx.sessionStartKind === 'restart') {
-    return pickRandom([
-      '모닥불 앞, 움츠린 채 잠들어 있던 몸이 천천히 일어난다.',
-      '불씨가 꺼져가는 소리를 들으며, 다시 눈을 뜬다.',
-    ])
-  }
-
   switch (state) {
+    case "Game.Start":
+      return pickRandom([
+        '차가운 바닥 위, 몸을 웅크린 채 의식을 되찾는다.',
+        '얼어붙은 공기 속에서 눈을 뜨자, 낯선 미궁의 천장이 보인다.',
+      ]);
+    case "Game.Restart":
+      return pickRandom([
+        '모닥불 앞, 움츠린 채 잠들어 있던 몸을 천천히 일으켜 세운다.',
+        '불씨가 꺼져가는 소리를 들으며, 다시 눈을 뜬다.',
+      ]);
     case "Idle":
       return `모험가는 방 한가운데서 숨을 고른다.`;
     case "Move.Select":
       return `갈림길 앞. 어느 문을 택할 것인가? (동/서/남/북)`;
     case "Move.Entering":
-      return `${roomName ?? "이름 모를 방"}으로 천천히 발을 들인다…`;
+      {
+        const rt = resolveRoomType(ctx)
+        if (rt === 'Empty') {
+          return pickRandom([
+            '좁은 통로 끝에 아무 것도 없는 공간이 드러난다.',
+            '돌벽만 서 있는 텅 빈 방. 메아리만 남아 있다.',
+          ])
+        }
+        if (rt === 'Trap') {
+          return pickRandom([
+            '발밑이 꺼지며 날카로운 가시에 찔린다. 피가 바닥에 스며든다.',
+            '바닥 전체에 가시가 솟아올라, 발 디딜 틈조차 없다.',
+          ])
+        }
+        if (rt === 'Treasure') {
+          return pickRandom([
+            '길 끝에 오래된 상자가 홀로 놓여 있다.',
+            '먼지 낀 보물상자 하나가 어둠 속에서 희미하게 빛난다.',
+          ])
+        }
+        if (rt === 'Monster') {
+          return pickRandom([
+            '그림자가 일어서며 괴물의 숨소리가 울린다.',
+            '어둠 속 붉은 눈이 번뜩이며 괴물이 모습을 드러낸다.',
+          ])
+        }
+        // Shop 또는 미지정: 기존 기본 문구
+        return `${roomName ?? "이름 모를 방"}으로 천천히 발을 들인다…`
+      }
     case "Room.Explore":
       return `주위를 살핀다. 바닥, 벽, 천장까지. 단서가 있을지도 모른다.`;
     case "Event":
