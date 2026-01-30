@@ -28,6 +28,9 @@ export interface CurrentDoc {
   gold: number;
   inventory: InventorySlot[];
   equipment: Equipment;
+  // Persisted room flags for firebase-only mode
+  roomEventOn?: Record<string, boolean>;
+  roomRestUsed?: Record<string, boolean>;
   worldSeed: string;
   cooldownUntil: number;
   updatedAt: number;

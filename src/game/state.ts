@@ -31,6 +31,8 @@ export interface GameSlice {
   tempSceneSrc?: string
   // 방별 이벤트 트리거 상태 (true: 이벤트 활성, false: 종료됨)
   roomEventOn: Record<string, boolean>
+  // 방별 휴식 사용 여부 (true: 이미 쉬었음)
+  roomRestUsed: Record<string, boolean>
 
   // actions
   init(userId: string, repo?: PositionRepo): Promise<void>
@@ -59,6 +61,7 @@ export const useGameStore = create<GameSlice>()(
     visitedRooms: { [`${defaultPos.x},${defaultPos.y}`]: true },
     tempSceneSrc: undefined,
     roomEventOn: {},
+    roomRestUsed: {},
 
     async init(userId: string, repo?: PositionRepo) {
       const effectiveRepo = repo ?? new FirestorePositionRepo()
@@ -83,6 +86,8 @@ export const useGameStore = create<GameSlice>()(
           playerState: resetFlag ? 'Game.Start' : 'Game.Restart',
           lastError: undefined,
           sessionStartKind: resetFlag ? 'start' : 'restart',
+          roomEventOn: existing.roomEventOn ?? {},
+          roomRestUsed: existing.roomRestUsed ?? {},
         })
       } else {
         const doc: CurrentDoc = {
@@ -102,7 +107,7 @@ export const useGameStore = create<GameSlice>()(
         await effectiveRepo.saveCurrent(userId, doc)
         // 최초 시작: 시작 방의 이벤트는 비활성(false)로 시작한다 → Empty처럼 보임
         const startKey = `${doc.pos.x},${doc.pos.y}`
-        set({ userId, ...doc, playerState: 'Game.Start', sessionStartKind: 'start', roomEventOn: { [startKey]: false } })
+        set({ userId, ...doc, playerState: 'Game.Start', sessionStartKind: 'start', roomEventOn: { [startKey]: false }, roomRestUsed: {} })
       }
       if (resetFlag && typeof window !== 'undefined') {
         try { window.localStorage.removeItem('indark_just_reset') } catch {}

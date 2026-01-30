@@ -46,6 +46,8 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     gold: useGameStore.getState().gold ?? 0,
     inventory: useGameStore.getState().inventory ?? Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
     equipment: useGameStore.getState().equipment ?? { weapon: null, armor: null },
+    roomEventOn: useGameStore.getState().roomEventOn ?? {},
+    roomRestUsed: (useGameStore.getState() as any).roomRestUsed ?? {},
     cooldownUntil,
     updatedAt: now,
     version: 1,
@@ -62,6 +64,18 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     await repo.saveCurrent(userId, optimistic)
     // 성공 → Explore 전이, 쿨다운 설정
     setState({ playerState: 'Room.Explore', cooldownUntil: now + moveCooldownMs, lastError: undefined })
+
+    // 방 이벤트 상태 초기화(첫 방문 기준)
+    try {
+      const current = useGameStore.getState()
+      const key = `${current.pos.x},${current.pos.y}`
+      if (!(key in current.roomEventOn)) {
+        const nextRoomEventOn = { ...current.roomEventOn, [key]: true }
+        setState({ roomEventOn: nextRoomEventOn })
+        optimistic.roomEventOn = nextRoomEventOn
+      }
+    } catch {}
+
     // 새로운 방에 처음 들어왔을 때만 로그
     try {
       const current = useGameStore.getState()
@@ -71,15 +85,17 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
         // 브라우저 콘솔 로그
         // eslint-disable-next-line no-console
         console.log(`[InDark] Entered new room → type=${roomType}, state=${current.playerState}`)
-        // 터미널로도 포워딩 (개발 서버에서만 동작)
-        fetch('/__indark-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tag: 'entered-room', payload: { roomType, playerState: current.playerState, pos: current.pos } }),
-        }).catch(() => {})
+        if (import.meta.env.DEV) {
+          fetch('/__indark-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tag: 'entered-room', payload: { roomType, playerState: current.playerState, pos: current.pos } }),
+          }).catch(() => {})
+        }
         markRoomVisited(current.pos)
       }
     } catch {}
+
     // 쿨다운도 원격 반영(선택: 단일 저장으로 합칠 수도 있음)
     await repo.saveCurrent(userId, { ...optimistic, cooldownUntil: now + moveCooldownMs })
   } catch (err) {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDouble } from "lucide-react";
 import type { Dir } from "../../../game/types";
 import { useLocalGame } from "../../../game/localGame";
-import { serverResolve } from "../../../game/serverActions";
+import { resolveAction } from "../../../game/clientActions";
 import { effectiveRoomTypeFor } from "../../../game/room";
 import { useGameStore } from "../../../game/state";
 
@@ -95,10 +95,10 @@ export function PlayerActionControls() {
 									{!showMove && (
 										<>
 											{!canRest && (
-												<Button className="rounded-xl" onClick={() => void serverResolve('LOOK')}>살펴보기</Button>
+												<Button className="rounded-xl" onClick={() => void resolveAction('LOOK')}>살펴보기</Button>
 											)}
 											{canRest && (
-												<Button className="rounded-xl" onClick={() => void serverResolve('REST')}>
+												<Button className="rounded-xl" onClick={() => void resolveAction('REST')}>
 													<BedDouble className="mr-2 w-4 h-4" />쉬기
 												</Button>
 											)}
@@ -136,8 +136,8 @@ export function PlayerActionControls() {
 							if (eventOn === true) {
 								return (
 									<>
-										<Button className="rounded-xl" onClick={() => void serverResolve('FIGHT')}>전투</Button>
-										<Button className="rounded-xl" onClick={() => void serverResolve('FLEE')}>도망</Button>
+										<Button className="rounded-xl" onClick={() => void resolveAction('FIGHT')}>전투</Button>
+										<Button className="rounded-xl" onClick={() => void resolveAction('FLEE')}>도망</Button>
 									</>
 								);
 							}
@@ -170,14 +170,14 @@ export function PlayerActionControls() {
 								return <Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>;
 							}
 							if (eventOn === true) {
-								return <Button className="rounded-xl" onClick={() => void serverResolve('SEARCH')}>살펴보기</Button>;
+								return <Button className="rounded-xl" onClick={() => void resolveAction('SEARCH')}>살펴보기</Button>;
 							}
 							// event finished -> rest(once) + move
 							return (
 								<>
 									{!showMove && (
 										<>
-											<Button className="rounded-xl" onClick={() => void serverResolve('REST')}>
+											<Button className="rounded-xl" onClick={() => void resolveAction('REST')}>
 												<BedDouble className="mr-2 w-4 h-4" />쉬기
 											</Button>
 											<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>

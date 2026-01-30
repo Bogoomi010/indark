@@ -16,7 +16,9 @@ import { GameLocalProvider, useLocalGame } from "../game/localGame";
 import { useAuth } from "../auth/AuthProvider";
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../game/state";
+import { FirestorePositionRepo } from "../services/positionRepo.firestore";
 import { ServerPositionRepo } from "../services/positionRepo.server";
+import { backendMode } from "../config/runtime";
 import { effectiveRoomTypeFor } from "../game/room";
 import HudMini from "../components/HudMini";
 import { NarrationBar } from "../components/NarrationBar";
@@ -26,7 +28,8 @@ export default function GamePortalPage() {
   const init = useGameStore(s => s.init);
   useEffect(() => {
     const uid = user?.uid ?? 'anon';
-    void init(uid, new ServerPositionRepo());
+    const mode = backendMode();
+    void init(uid, mode === 'server' ? new ServerPositionRepo() : new FirestorePositionRepo());
   }, [user?.uid, init]);
   return (
     <GameLocalProvider>
@@ -69,11 +72,13 @@ function GamePortalInner() {
     try {
       // eslint-disable-next-line no-console
       console.log(`[InDark] Current room → type=${type}, state=${playerState}`);
-      fetch('/__indark-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag: 'current-room', payload: { roomType: type, playerState, pos } }),
-      }).catch(() => {});
+      if (import.meta.env.DEV) {
+        fetch('/__indark-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag: 'current-room', payload: { roomType: type, playerState, pos } }),
+        }).catch(() => {});
+      }
     } finally {
       loggedCurrentOnceRef.current = true;
     }
