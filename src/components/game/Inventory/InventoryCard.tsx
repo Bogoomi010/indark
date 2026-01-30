@@ -3,7 +3,7 @@ import { Backpack, Shield, Swords, Coins, Utensils } from "lucide-react";
 import { useI18n } from "../../../i18n/i18n";
 import { useGameStore } from "../../../game/state";
 import { getItemDef } from "../../../game/items";
-import { serverEquip, serverUseItem } from "../../../game/serverActions";
+import { useItem } from "../../../game/clientActions";
 
 function iconFor(itemId: string) {
 	if (itemId.startsWith('weapon_')) return Swords;
@@ -44,13 +44,14 @@ export function InventoryCard() {
 									if (def.kind === 'consumable') {
 										const ok = window.confirm(`사용하겠습니까?\n${def.name} x${slot.qty}`);
 										if (!ok) return;
-										void serverUseItem(slot.slot);
+										void useItem(slot.slot);
 										return;
 									}
 									if (def.kind === 'weapon' || def.kind === 'armor') {
 										const ok = window.confirm(`장착하겠습니까?\n${def.name}`);
 										if (!ok) return;
-										void serverEquip(slot.slot);
+										// Equip UI will be added later in firebase-only mode.
+										window.alert('장착 기능: 준비중')
 									}
 								}}
 							>
