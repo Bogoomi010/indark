@@ -53,7 +53,12 @@ export function PlayerActionControls() {
 				{!isStart && (() => {
 				{/* 방 타입별로 하나의 버튼 세트만 렌더 */}
 					switch (roomType) {
-						case 'Trap':
+						case 'Trap': {
+							const roomKey = `${pos.x},${pos.y}`;
+							const eventOn = roomEventOn[roomKey];
+							// Trap 룰: 이벤트 중에는 버튼이 없다(서버에서 진입 즉시 데미지 처리)
+							// eventOn이 undefined면 안전모드로 이동만 보여줌
+							if (eventOn === true) return null;
 							return (
 								<>
 									{!showMove && (
@@ -80,6 +85,7 @@ export function PlayerActionControls() {
 									)}
 								</>
 							);
+						}
 						case 'Empty': {
 							const roomKey = `${pos.x},${pos.y}`;
 							const eventOn = roomEventOn[roomKey];
@@ -121,17 +127,105 @@ export function PlayerActionControls() {
 								</>
 							);
 						}
-						case 'Monster':
+						case 'Monster': {
+							const roomKey = `${pos.x},${pos.y}`;
+							const eventOn = roomEventOn[roomKey];
+							if (eventOn === undefined) {
+								return <Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>;
+							}
+							if (eventOn === true) {
+								return (
+									<>
+										<Button className="rounded-xl" onClick={() => void serverResolve('FIGHT')}>전투</Button>
+										<Button className="rounded-xl" onClick={() => void serverResolve('FLEE')}>도망</Button>
+									</>
+								);
+							}
+							// event finished
 							return (
 								<>
-									<Button className="rounded-xl" onClick={() => void serverResolve('FIGHT')}>전투</Button>
-									<Button className="rounded-xl" onClick={() => void serverResolve('FLEE')}>도망</Button>
+									{!showMove && (
+										<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
+									)}
+									{showMove && (
+										<>
+											{arrows.map(({ dir, label, Icon }) => {
+												const disabled = !exits[dir];
+												return (
+													<Button key={dir} title={disabled ? '출구가 닫혀 있습니다.' : undefined} onClick={() => { setGameState({ tempSceneSrc: undefined }); move(dir); }} disabled={disabled} className="rounded-xl disabled:opacity-50">
+														<Icon className="mr-2 w-4 h-4" />{label}
+													</Button>
+												);
+											})}
+											<Button className="rounded-xl" onClick={() => { setShowMove(false); setGameState({ tempSceneSrc: undefined, playerState: 'Idle' }); }}>이전</Button>
+										</>
+									)}
 								</>
 							);
-						case 'Treasure':
-							return <Button className="rounded-xl" onClick={() => void serverResolve('SEARCH')}>살펴보기</Button>;
-						case 'Shop':
-							return null; // 현재 상점 전용 버튼 없음
+						}
+						case 'Treasure': {
+							const roomKey = `${pos.x},${pos.y}`;
+							const eventOn = roomEventOn[roomKey];
+							if (eventOn === undefined) {
+								return <Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>;
+							}
+							if (eventOn === true) {
+								return <Button className="rounded-xl" onClick={() => void serverResolve('SEARCH')}>살펴보기</Button>;
+							}
+							// event finished -> rest(once) + move
+							return (
+								<>
+									{!showMove && (
+										<>
+											<Button className="rounded-xl" onClick={() => void serverResolve('REST')}>
+												<BedDouble className="mr-2 w-4 h-4" />쉬기
+											</Button>
+											<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
+										</>
+									)}
+									{showMove && (
+										<>
+											{arrows.map(({ dir, label, Icon }) => {
+												const disabled = !exits[dir];
+												return (
+													<Button key={dir} title={disabled ? '출구가 닫혀 있습니다.' : undefined} onClick={() => { setGameState({ tempSceneSrc: undefined }); move(dir); }} disabled={disabled} className="rounded-xl disabled:opacity-50">
+														<Icon className="mr-2 w-4 h-4" />{label}
+													</Button>
+												);
+											})}
+											<Button className="rounded-xl" onClick={() => { setShowMove(false); setGameState({ tempSceneSrc: undefined, playerState: 'Idle' }); }}>이전</Button>
+										</>
+									)}
+								</>
+							);
+						}
+						case 'Shop': {
+							// TODO: 상점 UI는 추후. 지금은 이벤트 중 이동 불가 규칙만 적용.
+							const roomKey = `${pos.x},${pos.y}`;
+							const eventOn = roomEventOn[roomKey];
+							if (eventOn === true) return null;
+							// event finished or unknown -> move
+							return (
+								<>
+									{!showMove && (
+										<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
+									)}
+									{showMove && (
+										<>
+											{arrows.map(({ dir, label, Icon }) => {
+												const disabled = !exits[dir];
+												return (
+													<Button key={dir} title={disabled ? '출구가 닫혀 있습니다.' : undefined} onClick={() => { setGameState({ tempSceneSrc: undefined }); move(dir); }} disabled={disabled} className="rounded-xl disabled:opacity-50">
+														<Icon className="mr-2 w-4 h-4" />{label}
+													</Button>
+												);
+											})}
+											<Button className="rounded-xl" onClick={() => { setShowMove(false); setGameState({ tempSceneSrc: undefined, playerState: 'Idle' }); }}>이전</Button>
+										</>
+									)}
+								</>
+							);
+						}
 						default:
 							return null;
 					}
