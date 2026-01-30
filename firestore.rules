@@ -7,6 +7,37 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function onlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    // --- User profile ---
+    // Used by AuthProvider.upsertUserProfile + Header nickname display.
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      // allow create/update only by owner with whitelisted fields
+      allow create, update: if isOwner(uid)
+        && onlyKeys(['email','nickname','provider','createdAt','lastLogin','settings'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 1
+        && request.resource.data.nickname.size() <= 32;
+
+      allow delete: if false;
+
+      // Optional: old client save location (if still used anywhere)
+      match /game/{docId} {
+        match /current {
+          allow read, create, update: if isOwner(uid);
+          allow delete: if false;
+        }
+      }
+    }
+
     // Static config: readable by anyone (or lock to signed-in if you prefer)
     match /configs/{docId} {
       allow read: if true;
