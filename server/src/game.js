@@ -80,9 +80,9 @@ export function initialState(userId, now = Date.now()) {
   };
 }
 
-export function snapshotRoom(state) {
+export function snapshotRoom(state, opts = {}) {
   const k = keyOf(state.pos.x, state.pos.y);
-  const eventOn = state.roomEventOn?.[k] ?? true;
+  const eventOn = (typeof opts.eventOn === 'boolean') ? opts.eventOn : (state.roomEventOn?.[k] ?? true);
   // For now: roomType + eventOn. (Client can derive variants.)
   return {
     key: k,

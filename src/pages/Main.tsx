@@ -16,7 +16,7 @@ import { GameLocalProvider, useLocalGame } from "../game/localGame";
 import { useAuth } from "../auth/AuthProvider";
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../game/state";
-import { FirestorePositionRepo } from "../services/positionRepo.firestore";
+import { ServerPositionRepo } from "../services/positionRepo.server";
 import { effectiveRoomTypeFor } from "../game/room";
 import HudMini from "../components/HudMini";
 import { NarrationBar } from "../components/NarrationBar";
@@ -26,7 +26,7 @@ export default function GamePortalPage() {
   const init = useGameStore(s => s.init);
   useEffect(() => {
     const uid = user?.uid ?? 'anon';
-    void init(uid, new FirestorePositionRepo());
+    void init(uid, new ServerPositionRepo());
   }, [user?.uid, init]);
   return (
     <GameLocalProvider>

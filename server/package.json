@@ -6,5 +6,8 @@
   "scripts": {
     "dev": "node src/index.js",
     "start": "node src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.2"
   }
 }

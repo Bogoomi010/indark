@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { getUserId, readJson, sendJson, sendText } from './http.js';
-import { getOrCreate, reset as resetUser, setState } from './store.js';
-import { snapshotRoom, validateMove, applyMove } from './game.js';
+import { getOrCreatePlayer, resetPlayer, savePlayer, ensureRoom, setRoomEventOn, getRoomEventOn } from './storeSqlite.js';
+import { snapshotRoom, validateMove, applyMove, roomTypeFor } from './game.js';
 
 const port = process.env.PORT ? Number(process.env.PORT) : 8080;
 
@@ -12,26 +12,31 @@ const routes = {
 
   '/game/start': async (req, res) => {
     const userId = getUserId(req);
-    const state = getOrCreate(userId);
-    sendJson(res, 200, { state, room: snapshotRoom(state) });
+    const state = getOrCreatePlayer(userId);
+    const roomKey = `${state.pos.x},${state.pos.y}`;
+    const eventOn = ensureRoom(userId, roomKey, 0);
+    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }) });
   },
 
   '/game/state': async (req, res) => {
     const userId = getUserId(req);
-    const state = getOrCreate(userId);
-    sendJson(res, 200, { state, room: snapshotRoom(state) });
+    const state = getOrCreatePlayer(userId);
+    const roomKey = `${state.pos.x},${state.pos.y}`;
+    const eventOn = ensureRoom(userId, roomKey, 0);
+    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }) });
   },
 
   '/game/reset': async (req, res) => {
     const userId = getUserId(req);
-    const state = resetUser(userId);
-    // Mimic client behavior: set a reset flag hint
-    sendJson(res, 200, { state, room: snapshotRoom(state) });
+    const state = resetPlayer(userId);
+    const roomKey = `${state.pos.x},${state.pos.y}`;
+    const eventOn = ensureRoom(userId, roomKey, 0);
+    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }) });
   },
 
   '/game/move': async (req, res) => {
     const userId = getUserId(req);
-    const state = getOrCreate(userId);
+    const state = getOrCreatePlayer(userId);
     const body = await readJson(req);
     const dir = body?.dir;
     const now = Date.now();
@@ -43,13 +48,78 @@ const routes = {
 
     const valid = validateMove(state, dir, now);
     if (!valid.ok) {
-      sendJson(res, 200, { ok: false, ...valid, state, room: snapshotRoom(state) });
+      const roomKey = `${state.pos.x},${state.pos.y}`;
+      const eventOn = ensureRoom(userId, roomKey, 0);
+      sendJson(res, 200, { ok: false, ...valid, state, room: snapshotRoom(state, { eventOn }) });
       return;
     }
 
-    const { next, log } = applyMove(state, dir, now);
-    setState(userId, next);
-    sendJson(res, 200, { ok: true, state: next, room: snapshotRoom(next), log });
+    const { next, log, firstVisit, roomType } = applyMove(state, dir, now);
+
+    // Ensure room state exists for the destination room.
+    const destKey = `${next.pos.x},${next.pos.y}`;
+    const defaultEventOn = (destKey === '0,0') ? 0 : 1;
+    const eventOn = ensureRoom(userId, destKey, defaultEventOn);
+
+    // Persist player
+    next.version = (state.version ?? 1) + 1;
+    savePlayer(next);
+
+    sendJson(res, 200, { ok: true, state: next, room: snapshotRoom(next, { eventOn }), log, meta: { firstVisit, roomType } });
+  },
+
+  '/game/room/resolve': async (req, res) => {
+    const userId = getUserId(req);
+    const state = getOrCreatePlayer(userId);
+    const body = await readJson(req);
+    const action = body?.action;
+
+    const roomKey = `${state.pos.x},${state.pos.y}`;
+    const currentOn = ensureRoom(userId, roomKey, roomKey === '0,0' ? 0 : 1);
+    const roomType = roomTypeFor(state.pos, state.worldSeed);
+
+    if (!currentOn) {
+      sendJson(res, 200, { ok: false, code: 'ALREADY_CLEARED', message: 'Room event already resolved', state, room: snapshotRoom(state, { eventOn: false }), log: [`[ROOM] already cleared (${roomType})`] });
+      return;
+    }
+
+    // MVP resolve rules: one-tap clear + tiny rewards depending on room type.
+    const next = { ...state };
+    const log = [];
+
+    if (roomType === 'Treasure') {
+      next.torch = Math.min(next.torch + 10, 999);
+      log.push('[TREASURE] found supplies (+10 torch)');
+    } else if (roomType === 'Trap') {
+      // pay stamina to disarm; if not enough, just clear with no reward
+      if (next.sta >= 2) {
+        next.sta -= 2;
+        log.push('[TRAP] disarmed (-2 sta)');
+      } else {
+        log.push('[TRAP] barely escaped');
+      }
+    } else if (roomType === 'Monster') {
+      // simple fight
+      next.hp = Math.max(next.hp - 5, 0);
+      log.push('[MONSTER] fought monster (-5 hp)');
+    } else {
+      log.push(`[ROOM] resolve: nothing to do (${roomType})`);
+    }
+
+    // mark cleared
+    setRoomEventOn(userId, roomKey, false);
+
+    next.updatedAt = Date.now();
+    next.version = (state.version ?? 1) + 1;
+    savePlayer(next);
+
+    sendJson(res, 200, {
+      ok: true,
+      state: next,
+      room: snapshotRoom(next, { eventOn: false }),
+      log,
+      meta: { roomType, action: action ?? null },
+    });
   },
 };
 

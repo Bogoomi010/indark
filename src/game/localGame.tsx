@@ -1,8 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react'
 import type { Dir, Vec2 } from './types'
 import { useGameStore } from './state'
-import { tryMove } from './flow'
-import { FirestorePositionRepo } from '../services/positionRepo.firestore'
+import { serverMove } from './serverActions'
 
 type LocalGameValue = {
   pos: Vec2
@@ -19,7 +18,7 @@ export function GameLocalProvider({ children }: { children: React.ReactNode }) {
   // 스토어 값을 그대로 바라보는 호환 레이어
   const { pos, worldSeed, exits, torch, sta } = useGameStore()
   const move = useCallback((dir: Dir) => {
-    void tryMove(dir, { repo: new FirestorePositionRepo() })
+    void serverMove(dir)
   }, [])
   const value = useMemo<LocalGameValue>(() => ({ pos, worldSeed, exits, move, torch, sta }), [pos, worldSeed, exits, move, torch, sta])
   return <LocalGameContext.Provider value={value}>{children}</LocalGameContext.Provider>
