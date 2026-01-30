@@ -10,11 +10,16 @@ export function loadPlayer(userId) {
   const row = db.prepare('SELECT state_json FROM player_state WHERE user_id = ?').get(userId);
   if (!row) return null;
   const state = JSON.parse(row.state_json);
-  // Backward-compat: ensure inventory/gold exist
+  // Backward-compat: ensure inventory/gold/equipment exist
   if (typeof state.gold !== 'number') state.gold = 0;
   if (!Array.isArray(state.inventory)) {
     state.inventory = Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 }));
   }
+  if (!state.equipment || typeof state.equipment !== 'object') {
+    state.equipment = { weapon: null, armor: null };
+  }
+  if (!('weapon' in state.equipment)) state.equipment.weapon = null;
+  if (!('armor' in state.equipment)) state.equipment.armor = null;
   return state;
 }
 

@@ -37,6 +37,7 @@ function syncFromServer(payload: { state: any; room: any }) {
     mp: state.mp,
     gold: state.gold ?? 0,
     inventory: state.inventory ?? Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
+    equipment: state.equipment ?? { weapon: null, armor: null },
     worldSeed: state.worldSeed,
     cooldownUntil: state.cooldownUntil ?? 0,
     lastError: undefined,
@@ -70,6 +71,18 @@ export async function serverResolve(action: string) {
 
 export async function serverUseItem(slot: number) {
   const data = await post<MoveResponse>('/game/item/use', { slot })
+  if (data.ok) syncFromServer({ state: data.state, room: data.room })
+  return data
+}
+
+export async function serverEquip(slot: number) {
+  const data = await post<MoveResponse>('/game/item/equip', { slot })
+  if (data.ok) syncFromServer({ state: data.state, room: data.room })
+  return data
+}
+
+export async function serverUnequip(kind: 'weapon' | 'armor') {
+  const data = await post<MoveResponse>('/game/item/unequip', { kind })
   if (data.ok) syncFromServer({ state: data.state, room: data.room })
   return data
 }

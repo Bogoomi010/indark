@@ -16,6 +16,8 @@ export type PlayerState =
 
 export type InventorySlot = { slot: number; itemId: string | null; qty: number }
 
+export type Equipment = { weapon: string | null; armor: string | null }
+
 export interface CurrentDoc {
   pos: Vec2;
   facing?: Dir;
@@ -25,6 +27,7 @@ export interface CurrentDoc {
   mp: number;
   gold: number;
   inventory: InventorySlot[];
+  equipment: Equipment;
   worldSeed: string;
   cooldownUntil: number;
   updatedAt: number;

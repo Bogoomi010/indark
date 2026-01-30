@@ -4,6 +4,7 @@ import { getOrCreatePlayer, resetPlayer, savePlayer, ensureRoom, setRoomEventOn,
 import { snapshotRoom, validateMove, applyMove, roomTypeFor } from './game.js';
 import { addItem, MAX_SLOTS, emptyInventory } from './inventory.js';
 import { getItem } from './items.js';
+import { equipFromSlot } from './equipment.js';
 
 const port = process.env.PORT ? Number(process.env.PORT) : 8080;
 
@@ -96,6 +97,9 @@ const routes = {
     // Backward-compat if older saves exist
     if (!Array.isArray(state.inventory)) state.inventory = emptyInventory();
     if (typeof state.gold !== 'number') state.gold = 0;
+    if (!state.equipment || typeof state.equipment !== 'object') state.equipment = { weapon: null, armor: null };
+    if (!('weapon' in state.equipment)) state.equipment.weapon = null;
+    if (!('armor' in state.equipment)) state.equipment.armor = null;
 
     const roomKey = `${state.pos.x},${state.pos.y}`;
     const currentOn = ensureRoom(userId, roomKey, roomKey === '0,0' ? 0 : 1);
@@ -212,6 +216,62 @@ const routes = {
     });
   },
 
+  '/game/item/equip': async (req, res) => {
+    const userId = getUserId(req);
+    const state = getOrCreatePlayer(userId);
+    const now = Date.now();
+    const body = await readJson(req);
+    const slot = Number(body?.slot);
+
+    if (!Array.isArray(state.inventory)) state.inventory = emptyInventory();
+    if (typeof state.gold !== 'number') state.gold = 0;
+    if (!state.equipment || typeof state.equipment !== 'object') state.equipment = { weapon: null, armor: null };
+    if (!('weapon' in state.equipment)) state.equipment.weapon = null;
+    if (!('armor' in state.equipment)) state.equipment.armor = null;
+
+    if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_SLOTS) {
+      sendJson(res, 400, { ok: false, code: 'BAD_REQUEST', message: 'slot out of range', log: [{ ts: now, level: 'warn', code: 'BAD_REQUEST', msg: 'invalid slot', ctx: { slot } }] });
+      return;
+    }
+
+    const r = equipFromSlot(state, slot);
+    if (!r.ok) {
+      sendJson(res, 200, { ok: false, code: r.code, message: r.message, state, log: [{ ts: now, level: 'info', code: r.code, msg: r.message, ctx: { slot } }] });
+      return;
+    }
+
+    const next = { ...state, equipment: r.equipment };
+    next.updatedAt = now;
+    next.version = (state.version ?? 1) + 1;
+    savePlayer(next);
+
+    sendJson(res, 200, { ok: true, state: next, log: [{ ts: now, level: 'info', code: 'EQUIP', msg: 'equipped item', ctx: { slot, equipSlot: r.equipSlot, itemId: r.itemId } }] });
+  },
+
+  '/game/item/unequip': async (req, res) => {
+    const userId = getUserId(req);
+    const state = getOrCreatePlayer(userId);
+    const now = Date.now();
+    const body = await readJson(req);
+    const kind = body?.kind;
+
+    if (!state.equipment || typeof state.equipment !== 'object') state.equipment = { weapon: null, armor: null };
+    if (!('weapon' in state.equipment)) state.equipment.weapon = null;
+    if (!('armor' in state.equipment)) state.equipment.armor = null;
+
+    if (kind !== 'weapon' && kind !== 'armor') {
+      sendJson(res, 400, { ok: false, code: 'BAD_REQUEST', message: 'kind must be weapon|armor', log: [{ ts: now, level: 'warn', code: 'BAD_REQUEST', msg: 'invalid unequip kind', ctx: { kind } }] });
+      return;
+    }
+
+    const next = { ...state, equipment: { ...state.equipment, [kind]: null } };
+    next.updatedAt = now;
+    next.version = (state.version ?? 1) + 1;
+    savePlayer(next);
+
+    sendJson(res, 200, { ok: true, state: next, log: [{ ts: now, level: 'info', code: 'UNEQUIP', msg: 'unequipped item', ctx: { kind } }] });
+  },
+
   '/game/item/use': async (req, res) => {
     const userId = getUserId(req);
     const state = getOrCreatePlayer(userId);
@@ -221,6 +281,9 @@ const routes = {
 
     if (!Array.isArray(state.inventory)) state.inventory = emptyInventory();
     if (typeof state.gold !== 'number') state.gold = 0;
+    if (!state.equipment || typeof state.equipment !== 'object') state.equipment = { weapon: null, armor: null };
+    if (!('weapon' in state.equipment)) state.equipment.weapon = null;
+    if (!('armor' in state.equipment)) state.equipment.armor = null;
 
     if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_SLOTS) {
       sendJson(res, 400, { ok: false, code: 'BAD_REQUEST', message: 'slot out of range', log: [{ ts: now, level: 'warn', code: 'BAD_REQUEST', msg: 'invalid slot', ctx: { slot } }] });

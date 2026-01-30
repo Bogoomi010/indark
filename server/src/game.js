@@ -72,6 +72,7 @@ export function initialState(userId, now = Date.now()) {
     mp: DEFAULTS.mp,
     gold: DEFAULTS.gold,
     inventory: Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
+    equipment: { weapon: null, armor: null },
     worldSeed: DEFAULTS.worldSeed,
     cooldownUntil: 0,
     updatedAt: now,
