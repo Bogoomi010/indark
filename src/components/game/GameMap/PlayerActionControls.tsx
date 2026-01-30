@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowUp, ArrowRight, ArrowDown, ArrowLeft, BedDouble } from "lucide-react";
 import type { Dir } from "../../../game/types";
 import { useLocalGame } from "../../../game/localGame";
+import { serverResolve } from "../../../game/serverActions";
 import { effectiveRoomTypeFor } from "../../../game/room";
 import { useGameStore } from "../../../game/state";
 
@@ -79,15 +80,22 @@ export function PlayerActionControls() {
 									)}
 								</>
 							);
-						case 'Empty':
+						case 'Empty': {
+							const roomKey = `${pos.x},${pos.y}`;
+							const eventOn = roomEventOn[roomKey];
+							const canRest = eventOn === false; // 살펴보기 이후(이벤트 종료) 쉬기 노출
 							return (
 								<>
 									{!showMove && (
 										<>
-											<Button className="rounded-xl" onClick={() => alert('살펴보기: 준비중')}>살펴보기</Button>
-											<Button className="rounded-xl" onClick={() => alert('쉬기: 준비중')}>
-												<BedDouble className="mr-2 w-4 h-4" />쉬기
-											</Button>
+											{!canRest && (
+												<Button className="rounded-xl" onClick={() => void serverResolve('LOOK')}>살펴보기</Button>
+											)}
+											{canRest && (
+												<Button className="rounded-xl" onClick={() => void serverResolve('REST')}>
+													<BedDouble className="mr-2 w-4 h-4" />쉬기
+												</Button>
+											)}
 											<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
 										</>
 									)}
@@ -112,15 +120,16 @@ export function PlayerActionControls() {
 									)}
 								</>
 							);
+						}
 						case 'Monster':
 							return (
 								<>
-									<Button className="rounded-xl" onClick={() => alert('전투: 준비중')}>전투</Button>
-									<Button className="rounded-xl" onClick={() => alert('도망: 준비중')}>도망</Button>
+									<Button className="rounded-xl" onClick={() => void serverResolve('FIGHT')}>전투</Button>
+									<Button className="rounded-xl" onClick={() => void serverResolve('FLEE')}>도망</Button>
 								</>
 							);
 						case 'Treasure':
-							return <Button className="rounded-xl" onClick={() => alert('살펴보기: 준비중')}>살펴보기</Button>;
+							return <Button className="rounded-xl" onClick={() => void serverResolve('SEARCH')}>살펴보기</Button>;
 						case 'Shop':
 							return null; // 현재 상점 전용 버튼 없음
 						default:

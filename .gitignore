@@ -18,6 +18,10 @@ out/
 coverage/
 .nyc_output/
 
+# InDark server local DB
+server/data/
+*.sqlite
+
 # Caches
 .cache/
 .vite/

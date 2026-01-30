@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card";
 import { Badge } from "../../ui/Badge";
 import { useI18n } from "../../../i18n/i18n";
 import { useLocalGame } from "../../../game/localGame";
+import { useGameStore } from "../../../game/state";
 
 const Stat = memo(function Stat({ label, value, max = 100, barClass = "bg-emerald-500" }: { label: string; value: number; max?: number; barClass?: string }) {
 	const pct = useMemo(() => (max <= 0 ? 0 : Math.max(0, Math.min(100, Math.round((value / max) * 100)))), [value, max]);
@@ -22,14 +23,16 @@ const Stat = memo(function Stat({ label, value, max = 100, barClass = "bg-emeral
 export function CharacterStatusCard() {
 	const { t } = useI18n();
 	const { sta, torch } = useLocalGame();
+	const hp = useGameStore(s => s.hp);
+	const mp = useGameStore(s => s.mp);
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle className="text-base">{t("character.title")}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-3 text-sm text-zinc-300">
-				<Stat label="HP" value={82} />
-				<Stat label="MP" value={56} />
+				<Stat label="HP" value={hp} />
+				<Stat label="MP" value={mp} />
 				<Stat label="STA" value={sta} max={100} barClass="bg-amber-500" />
 				<Stat label="TORCH" value={torch} max={100} barClass="bg-red-500" />
 				<div className="flex flex-wrap gap-2 pt-1">
