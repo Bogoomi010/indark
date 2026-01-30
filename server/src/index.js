@@ -81,11 +81,22 @@ const routes = {
     const defaultEventOn = (destKey === '0,0') ? 0 : 1;
     const eventOn = ensureRoom(userId, destKey, defaultEventOn);
 
+    // Trap 룰: 진입 즉시(버튼 없이) 데미지 확정 적용 후 이벤트 종료
+    if (roomType === 'Trap' && eventOn) {
+      const dmg = 3 + Math.floor(Math.random() * 8); // 3~10
+      next.hp = Math.max(0, (next.hp ?? 0) - dmg);
+      setRoomEventOn(userId, destKey, false);
+      log.push({ ts: now, level: 'warn', code: 'TRAP_HIT', msg: 'trap damage on enter', ctx: { roomKey: destKey, dmg } });
+    }
+
     // Persist player
     next.version = (state.version ?? 1) + 1;
     savePlayer(next);
 
-    sendJson(res, 200, { ok: true, state: next, room: snapshotRoom(next, { eventOn }), log, meta: { firstVisit, roomType } });
+    // If trap auto-cleared, reflect eventOn=false
+    const finalEventOn = (roomType === 'Trap' && eventOn) ? false : eventOn;
+
+    sendJson(res, 200, { ok: true, state: next, room: snapshotRoom(next, { eventOn: finalEventOn }), log, meta: { firstVisit, roomType } });
   },
 
   '/game/room/resolve': async (req, res) => {
@@ -107,8 +118,8 @@ const routes = {
 
     const now = Date.now();
 
-    // Empty room: REST is allowed only after LOOK cleared the room event, and only once per room.
-    if (!currentOn && roomType === 'Empty' && action === 'REST') {
+    // Empty/Treasure room: REST is allowed only after LOOK cleared the room event, and only once per room.
+    if (!currentOn && (roomType === 'Empty' || roomType === 'Treasure') && action === 'REST') {
       const restUsed = getRoomRestUsed(userId, roomKey);
       if (restUsed) {
         sendJson(res, 200, {
@@ -135,7 +146,7 @@ const routes = {
         state: next,
         room: snapshotRoom(next, { eventOn: false }),
         log: [
-          { ts: now, level: 'info', code: 'REST', msg: 'rested in empty room', ctx: { hpDelta: 10, roomKey } },
+          { ts: now, level: 'info', code: 'REST', msg: `rested in ${roomType.toLowerCase()} room`, ctx: { hpDelta: 10, roomKey, roomType } },
           { ts: now, level: 'info', code: 'STATE', msg: 'state after rest', ctx: { hp: next.hp } },
         ],
         meta: { roomType, action },
