@@ -43,6 +43,8 @@ export async function tryMove(dir: Dir, opts?: { repo?: PositionRepo; now?: numb
     worldSeed,
     hp: useGameStore.getState().hp,
     mp: useGameStore.getState().mp,
+    gold: useGameStore.getState().gold ?? 0,
+    inventory: useGameStore.getState().inventory ?? Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
     cooldownUntil,
     updatedAt: now,
     version: 1,

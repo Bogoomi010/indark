@@ -15,6 +15,8 @@ export interface GameSlice {
   sta: number
   hp: number
   mp: number
+  gold: number
+  inventory: { slot: number; itemId: string | null; qty: number }[]
   worldSeed: string
   lastError?: string
   cooldownUntil: number
@@ -47,6 +49,8 @@ export const useGameStore = create<GameSlice>()(
     sta: initialSta,
     hp: initialHp,
     mp: initialMp,
+    gold: 0,
+    inventory: Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
     worldSeed: defaultWorldSeed,
     cooldownUntil: 0,
     exits: { N: true, E: true, S: true, W: true },
@@ -69,6 +73,8 @@ export const useGameStore = create<GameSlice>()(
           sta: existing.sta,
           hp: existing.hp,
           mp: existing.mp,
+          gold: existing.gold ?? 0,
+          inventory: existing.inventory ?? Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
           worldSeed: existing.worldSeed,
           cooldownUntil: existing.cooldownUntil ?? 0,
           playerState: resetFlag ? 'Game.Start' : 'Game.Restart',
@@ -82,6 +88,8 @@ export const useGameStore = create<GameSlice>()(
           sta: initialSta,
           hp: initialHp,
           mp: initialMp,
+          gold: 0,
+          inventory: Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
           worldSeed: defaultWorldSeed,
           cooldownUntil: 0,
           updatedAt: Date.now(),

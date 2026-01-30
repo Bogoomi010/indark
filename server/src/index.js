@@ -2,6 +2,8 @@ import http from 'node:http';
 import { getUserId, readJson, sendJson, sendText } from './http.js';
 import { getOrCreatePlayer, resetPlayer, savePlayer, ensureRoom, setRoomEventOn, getRoomEventOn } from './storeSqlite.js';
 import { snapshotRoom, validateMove, applyMove, roomTypeFor } from './game.js';
+import { addItem, MAX_SLOTS, emptyInventory } from './inventory.js';
+import { getItem } from './items.js';
 
 const port = process.env.PORT ? Number(process.env.PORT) : 8080;
 
@@ -91,6 +93,10 @@ const routes = {
     const body = await readJson(req);
     const action = body?.action;
 
+    // Backward-compat if older saves exist
+    if (!Array.isArray(state.inventory)) state.inventory = emptyInventory();
+    if (typeof state.gold !== 'number') state.gold = 0;
+
     const roomKey = `${state.pos.x},${state.pos.y}`;
     const currentOn = ensureRoom(userId, roomKey, roomKey === '0,0' ? 0 : 1);
     const roomType = roomTypeFor(state.pos, state.worldSeed);
@@ -129,15 +135,19 @@ const routes = {
       return;
     }
 
-    // MVP resolve rules: one-tap clear + tiny rewards depending on room type.
+    // Resolve rules: one-tap clear + rewards depending on room type.
     const next = { ...state };
+    next.inventory = Array.isArray(next.inventory) ? next.inventory : emptyInventory();
+    next.gold = typeof next.gold === 'number' ? next.gold : 0;
+
     const log = [];
 
     if (roomType === 'Treasure') {
-      next.torch = Math.min(next.torch + 10, 999);
-      log.push({ ts: now, level: 'info', code: 'TREASURE', msg: 'found supplies', ctx: { torchDelta: 10 } });
+      // Treasure becomes a gold-like payout.
+      const gain = 15;
+      next.gold += gain;
+      log.push({ ts: now, level: 'info', code: 'TREASURE', msg: 'found gold', ctx: { goldDelta: gain } });
     } else if (roomType === 'Trap') {
-      // pay stamina to disarm; if not enough, just clear with no reward
       if (next.sta >= 2) {
         next.sta -= 2;
         log.push({ ts: now, level: 'info', code: 'TRAP', msg: 'disarmed trap', ctx: { staDelta: -2 } });
@@ -145,24 +155,34 @@ const routes = {
         log.push({ ts: now, level: 'info', code: 'TRAP', msg: 'barely escaped', ctx: { sta: next.sta } });
       }
     } else if (roomType === 'Monster') {
-      // simple fight
       next.hp = Math.max(next.hp - 5, 0);
       log.push({ ts: now, level: 'info', code: 'MONSTER', msg: 'fought monster', ctx: { hpDelta: -5 } });
     } else if (roomType === 'Empty') {
       if (action === 'LOOK') {
-        // MVP: small random loot
+        // Loot table: pick exactly ONE reward.
+        // 0-44: gold, 45-74: bread, 75-87: weapon, 88-99: armor
         const roll = Math.floor(Math.random() * 100);
-        if (roll < 40) {
-          next.torch = Math.min(next.torch + 5, 999);
-          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found torch supplies', ctx: { torchDelta: 5 } });
-        } else if (roll < 70) {
-          next.sta = Math.min(next.sta + 3, 999);
-          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found food', ctx: { staDelta: 3 } });
+        if (roll < 45) {
+          const gain = 5 + Math.floor(Math.random() * 11); // 5-15
+          next.gold += gain;
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found gold', ctx: { goldDelta: gain, roll } });
+        } else if (roll < 75) {
+          const added = addItem(next.inventory, 'food_bread', 1);
+          next.inventory = added.inventory;
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found item', ctx: { itemId: 'food_bread', roll } });
+          for (const l of added.log) log.push({ ts: now, level: l.level, code: l.code, msg: l.msg, ctx: l.ctx });
+        } else if (roll < 88) {
+          const added = addItem(next.inventory, 'weapon_rusty_sword', 1);
+          next.inventory = added.inventory;
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found item', ctx: { itemId: 'weapon_rusty_sword', roll } });
+          for (const l of added.log) log.push({ ts: now, level: l.level, code: l.code, msg: l.msg, ctx: l.ctx });
         } else {
-          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found nothing', ctx: { roll } });
+          const added = addItem(next.inventory, 'armor_leather_vest', 1);
+          next.inventory = added.inventory;
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found item', ctx: { itemId: 'armor_leather_vest', roll } });
+          for (const l of added.log) log.push({ ts: now, level: l.level, code: l.code, msg: l.msg, ctx: l.ctx });
         }
       } else if (action === 'REST') {
-        // REST when event is still on: allow it too.
         next.hp = Math.min(next.hp + 10, 999);
         log.push({ ts: now, level: 'info', code: 'REST', msg: 'rested', ctx: { hpDelta: 10 } });
       } else {
@@ -186,10 +206,66 @@ const routes = {
       log: [
         { ts: now, level: 'info', code: 'ROOM_RESOLVE', msg: 'resolved room event', ctx: { roomKey, roomType, action: action ?? null } },
         ...log,
-        { ts: now, level: 'info', code: 'STATE', msg: 'state after resolve', ctx: { torch: next.torch, sta: next.sta, hp: next.hp, mp: next.mp } },
+        { ts: now, level: 'info', code: 'STATE', msg: 'state after resolve', ctx: { torch: next.torch, sta: next.sta, hp: next.hp, mp: next.mp, gold: next.gold } },
       ],
       meta: { roomType, action: action ?? null },
     });
+  },
+
+  '/game/item/use': async (req, res) => {
+    const userId = getUserId(req);
+    const state = getOrCreatePlayer(userId);
+    const now = Date.now();
+    const body = await readJson(req);
+    const slot = Number(body?.slot);
+
+    if (!Array.isArray(state.inventory)) state.inventory = emptyInventory();
+    if (typeof state.gold !== 'number') state.gold = 0;
+
+    if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_SLOTS) {
+      sendJson(res, 400, { ok: false, code: 'BAD_REQUEST', message: 'slot out of range', log: [{ ts: now, level: 'warn', code: 'BAD_REQUEST', msg: 'invalid slot', ctx: { slot } }] });
+      return;
+    }
+
+    const s = state.inventory[slot];
+    if (!s || !s.itemId || s.qty <= 0) {
+      sendJson(res, 200, { ok: false, code: 'EMPTY_SLOT', message: 'empty slot', state, log: [{ ts: now, level: 'info', code: 'EMPTY_SLOT', msg: 'empty slot', ctx: { slot } }] });
+      return;
+    }
+
+    const def = getItem(s.itemId);
+    if (!def) {
+      sendJson(res, 200, { ok: false, code: 'UNKNOWN_ITEM', message: 'unknown item', state, log: [{ ts: now, level: 'warn', code: 'UNKNOWN_ITEM', msg: 'unknown item', ctx: { itemId: s.itemId } }] });
+      return;
+    }
+
+    if (def.kind !== 'consumable' || !def.useEffect) {
+      sendJson(res, 200, { ok: false, code: 'NOT_USABLE', message: 'item is not usable', state, log: [{ ts: now, level: 'info', code: 'NOT_USABLE', msg: 'item not usable', ctx: { itemId: def.itemId } }] });
+      return;
+    }
+
+    const next = { ...state, inventory: state.inventory.map(x => ({ ...x })) };
+
+    // consume 1
+    next.inventory[slot].qty -= 1;
+    if (next.inventory[slot].qty <= 0) {
+      next.inventory[slot].qty = 0;
+      next.inventory[slot].itemId = null;
+    }
+
+    const logs = [{ ts: now, level: 'info', code: 'ITEM_USE', msg: 'used item', ctx: { slot, itemId: def.itemId } }];
+
+    if (def.useEffect.type === 'healHp') {
+      const before = next.hp;
+      next.hp = Math.min(next.hp + def.useEffect.amount, 999);
+      logs.push({ ts: now, level: 'info', code: 'EFFECT_HEAL', msg: 'healed hp', ctx: { hpDelta: next.hp - before } });
+    }
+
+    next.updatedAt = now;
+    next.version = (state.version ?? 1) + 1;
+    savePlayer(next);
+
+    sendJson(res, 200, { ok: true, state: next, log: [...logs, { ts: now, level: 'info', code: 'STATE', msg: 'state after item use', ctx: { hp: next.hp, gold: next.gold } }] });
   },
 };
 

@@ -6,8 +6,8 @@ type MoveResponse = {
   code?: string
   message?: string
   state: any
-  room: { key: string; roomType: string; eventState: { active: boolean; cleared: boolean } }
-  log?: string[]
+  room?: { key: string; roomType: string; eventState: { active: boolean; cleared: boolean } }
+  log?: any
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -35,6 +35,8 @@ function syncFromServer(payload: { state: any; room: any }) {
     sta: state.sta,
     hp: state.hp,
     mp: state.mp,
+    gold: state.gold ?? 0,
+    inventory: state.inventory ?? Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
     worldSeed: state.worldSeed,
     cooldownUntil: state.cooldownUntil ?? 0,
     lastError: undefined,
@@ -62,6 +64,12 @@ export async function serverMove(dir: Dir) {
 
 export async function serverResolve(action: string) {
   const data = await post<MoveResponse>('/game/room/resolve', { action })
+  if (data.ok) syncFromServer({ state: data.state, room: data.room })
+  return data
+}
+
+export async function serverUseItem(slot: number) {
+  const data = await post<MoveResponse>('/game/item/use', { slot })
   if (data.ok) syncFromServer({ state: data.state, room: data.room })
   return data
 }

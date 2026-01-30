@@ -9,7 +9,13 @@ export function loadPlayer(userId) {
   const db = getDb();
   const row = db.prepare('SELECT state_json FROM player_state WHERE user_id = ?').get(userId);
   if (!row) return null;
-  return JSON.parse(row.state_json);
+  const state = JSON.parse(row.state_json);
+  // Backward-compat: ensure inventory/gold exist
+  if (typeof state.gold !== 'number') state.gold = 0;
+  if (!Array.isArray(state.inventory)) {
+    state.inventory = Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 }));
+  }
+  return state;
 }
 
 export function savePlayer(state) {

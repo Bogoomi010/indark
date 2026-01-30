@@ -14,6 +14,8 @@ export type PlayerState =
   | 'Resting'
   | 'GameOver';
 
+export type InventorySlot = { slot: number; itemId: string | null; qty: number }
+
 export interface CurrentDoc {
   pos: Vec2;
   facing?: Dir;
@@ -21,10 +23,12 @@ export interface CurrentDoc {
   sta: number;
   hp: number;
   mp: number;
+  gold: number;
+  inventory: InventorySlot[];
   worldSeed: string;
   cooldownUntil: number;
   updatedAt: number;
-  version: 1;
+  version: number;
 }
 
 export const initialTorch = 100;

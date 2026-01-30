@@ -10,6 +10,8 @@ export async function resetCharacter(userId: string): Promise<void> {
     sta: initialSta,
     hp: initialHp,
     mp: initialMp,
+    gold: 0,
+    inventory: Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
     worldSeed: defaultWorldSeed,
     cooldownUntil: 0,
     updatedAt: Date.now(),

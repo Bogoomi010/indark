@@ -8,6 +8,7 @@ export const DEFAULTS = {
   sta: 100,
   hp: 100,
   mp: 30,
+  gold: 0,
   moveCooldownMs: 800,
 };
 
@@ -69,6 +70,8 @@ export function initialState(userId, now = Date.now()) {
     sta: DEFAULTS.sta,
     hp: DEFAULTS.hp,
     mp: DEFAULTS.mp,
+    gold: DEFAULTS.gold,
+    inventory: Array.from({ length: 20 }).map((_, slot) => ({ slot, itemId: null, qty: 0 })),
     worldSeed: DEFAULTS.worldSeed,
     cooldownUntil: 0,
     updatedAt: now,
