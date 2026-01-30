@@ -132,10 +132,9 @@ export function applyMove(state, dir, now) {
   const roomType = roomTypeFor(nextPos, next.worldSeed);
 
   const log = [];
-  log.push(`[MOVE] ${dir} → (${nextPos.x},${nextPos.y})`);
-  log.push(`[STATE] torch=${next.torch}, sta=${next.sta}`);
-  if (firstVisit) log.push(`[ROOM] first visit: type=${roomType}`);
-  else log.push(`[ROOM] revisit: type=${roomType}`);
+  log.push({ ts: now, level: 'info', code: 'MOVE', msg: `move ${dir}`, ctx: { dir, to: nextPos } });
+  log.push({ ts: now, level: 'info', code: 'STATE', msg: 'resources after move', ctx: { torch: next.torch, sta: next.sta, hp: next.hp, mp: next.mp } });
+  log.push({ ts: now, level: 'info', code: 'ROOM', msg: firstVisit ? 'entered new room' : 'revisited room', ctx: { roomKey: k, roomType, firstVisit } });
 
   // After exploring, go back to Idle (client can still render explore).
   // This keeps movement available for the next input.

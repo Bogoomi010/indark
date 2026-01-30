@@ -12,26 +12,32 @@ const routes = {
 
   '/game/start': async (req, res) => {
     const userId = getUserId(req);
+    const now = Date.now();
     const state = getOrCreatePlayer(userId);
     const roomKey = `${state.pos.x},${state.pos.y}`;
     const eventOn = ensureRoom(userId, roomKey, 0);
-    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }) });
+    const log = [{ ts: now, level: 'info', code: 'GAME_START', msg: 'game start', ctx: { userId } }];
+    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }), log });
   },
 
   '/game/state': async (req, res) => {
     const userId = getUserId(req);
+    const now = Date.now();
     const state = getOrCreatePlayer(userId);
     const roomKey = `${state.pos.x},${state.pos.y}`;
     const eventOn = ensureRoom(userId, roomKey, 0);
-    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }) });
+    const log = [{ ts: now, level: 'debug', code: 'GAME_STATE', msg: 'game state', ctx: { userId } }];
+    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }), log });
   },
 
   '/game/reset': async (req, res) => {
     const userId = getUserId(req);
+    const now = Date.now();
     const state = resetPlayer(userId);
     const roomKey = `${state.pos.x},${state.pos.y}`;
     const eventOn = ensureRoom(userId, roomKey, 0);
-    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }) });
+    const log = [{ ts: now, level: 'info', code: 'GAME_RESET', msg: 'game reset', ctx: { userId } }];
+    sendJson(res, 200, { state, room: snapshotRoom(state, { eventOn }), log });
   },
 
   '/game/move': async (req, res) => {
@@ -42,7 +48,12 @@ const routes = {
     const now = Date.now();
 
     if (!['N', 'E', 'S', 'W'].includes(dir)) {
-      sendJson(res, 400, { ok: false, code: 'BAD_REQUEST', message: 'dir must be one of N/E/S/W' });
+      sendJson(res, 400, {
+        ok: false,
+        code: 'BAD_REQUEST',
+        message: 'dir must be one of N/E/S/W',
+        log: [{ ts: now, level: 'warn', code: 'BAD_REQUEST', msg: 'invalid move dir', ctx: { dir } }],
+      });
       return;
     }
 
@@ -50,7 +61,13 @@ const routes = {
     if (!valid.ok) {
       const roomKey = `${state.pos.x},${state.pos.y}`;
       const eventOn = ensureRoom(userId, roomKey, 0);
-      sendJson(res, 200, { ok: false, ...valid, state, room: snapshotRoom(state, { eventOn }) });
+      sendJson(res, 200, {
+        ok: false,
+        ...valid,
+        state,
+        room: snapshotRoom(state, { eventOn }),
+        log: [{ ts: now, level: 'info', code: valid.code ?? 'MOVE_BLOCKED', msg: valid.message ?? 'move blocked', ctx: { dir, roomKey } }],
+      });
       return;
     }
 
@@ -78,8 +95,17 @@ const routes = {
     const currentOn = ensureRoom(userId, roomKey, roomKey === '0,0' ? 0 : 1);
     const roomType = roomTypeFor(state.pos, state.worldSeed);
 
+    const now = Date.now();
+
     if (!currentOn) {
-      sendJson(res, 200, { ok: false, code: 'ALREADY_CLEARED', message: 'Room event already resolved', state, room: snapshotRoom(state, { eventOn: false }), log: [`[ROOM] already cleared (${roomType})`] });
+      sendJson(res, 200, {
+        ok: false,
+        code: 'ALREADY_CLEARED',
+        message: 'Room event already resolved',
+        state,
+        room: snapshotRoom(state, { eventOn: false }),
+        log: [{ ts: now, level: 'info', code: 'ROOM_ALREADY_CLEARED', msg: 'room already cleared', ctx: { roomKey, roomType } }],
+      });
       return;
     }
 
@@ -89,27 +115,27 @@ const routes = {
 
     if (roomType === 'Treasure') {
       next.torch = Math.min(next.torch + 10, 999);
-      log.push('[TREASURE] found supplies (+10 torch)');
+      log.push({ ts: now, level: 'info', code: 'TREASURE', msg: 'found supplies', ctx: { torchDelta: 10 } });
     } else if (roomType === 'Trap') {
       // pay stamina to disarm; if not enough, just clear with no reward
       if (next.sta >= 2) {
         next.sta -= 2;
-        log.push('[TRAP] disarmed (-2 sta)');
+        log.push({ ts: now, level: 'info', code: 'TRAP', msg: 'disarmed trap', ctx: { staDelta: -2 } });
       } else {
-        log.push('[TRAP] barely escaped');
+        log.push({ ts: now, level: 'info', code: 'TRAP', msg: 'barely escaped', ctx: { sta: next.sta } });
       }
     } else if (roomType === 'Monster') {
       // simple fight
       next.hp = Math.max(next.hp - 5, 0);
-      log.push('[MONSTER] fought monster (-5 hp)');
+      log.push({ ts: now, level: 'info', code: 'MONSTER', msg: 'fought monster', ctx: { hpDelta: -5 } });
     } else {
-      log.push(`[ROOM] resolve: nothing to do (${roomType})`);
+      log.push({ ts: now, level: 'debug', code: 'ROOM', msg: 'nothing to resolve', ctx: { roomType } });
     }
 
     // mark cleared
     setRoomEventOn(userId, roomKey, false);
 
-    next.updatedAt = Date.now();
+    next.updatedAt = now;
     next.version = (state.version ?? 1) + 1;
     savePlayer(next);
 
@@ -117,7 +143,11 @@ const routes = {
       ok: true,
       state: next,
       room: snapshotRoom(next, { eventOn: false }),
-      log,
+      log: [
+        { ts: now, level: 'info', code: 'ROOM_RESOLVE', msg: 'resolved room event', ctx: { roomKey, roomType, action: action ?? null } },
+        ...log,
+        { ts: now, level: 'info', code: 'STATE', msg: 'state after resolve', ctx: { torch: next.torch, sta: next.sta, hp: next.hp, mp: next.mp } },
+      ],
       meta: { roomType, action: action ?? null },
     });
   },
