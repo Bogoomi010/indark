@@ -25,10 +25,19 @@ export function getDb() {
       user_id TEXT NOT NULL,
       room_key TEXT NOT NULL,
       event_on INTEGER NOT NULL DEFAULT 1,
+      rest_used INTEGER NOT NULL DEFAULT 0,
       updated_at INTEGER NOT NULL,
       PRIMARY KEY (user_id, room_key)
     );
   `);
+
+  // Lightweight migration: add rest_used if missing (older DBs)
+  try {
+    const cols = db.prepare(`PRAGMA table_info(room_state)`).all().map(r => r.name);
+    if (!cols.includes('rest_used')) {
+      db.exec('ALTER TABLE room_state ADD COLUMN rest_used INTEGER NOT NULL DEFAULT 0');
+    }
+  } catch {}
 
   return db;
 }

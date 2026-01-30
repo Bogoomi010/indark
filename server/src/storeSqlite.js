@@ -64,9 +64,24 @@ export function ensureRoom(userId, roomKey, defaultEventOn = 1) {
   const row = db.prepare('SELECT event_on FROM room_state WHERE user_id = ? AND room_key = ?').get(userId, roomKey);
   if (row) return Boolean(row.event_on);
   db.prepare(
-    'INSERT INTO room_state (user_id, room_key, event_on, updated_at) VALUES (?, ?, ?, ?)'
-  ).run(userId, roomKey, defaultEventOn ? 1 : 0, nowMs());
+    'INSERT INTO room_state (user_id, room_key, event_on, rest_used, updated_at) VALUES (?, ?, ?, ?, ?)'
+  ).run(userId, roomKey, defaultEventOn ? 1 : 0, 0, nowMs());
   return Boolean(defaultEventOn);
+}
+
+export function getRoomRestUsed(userId, roomKey) {
+  const db = getDb();
+  const row = db.prepare('SELECT rest_used FROM room_state WHERE user_id = ? AND room_key = ?').get(userId, roomKey);
+  return row ? Boolean(row.rest_used) : false;
+}
+
+export function setRoomRestUsed(userId, roomKey, restUsed) {
+  const db = getDb();
+  // ensure row exists
+  ensureRoom(userId, roomKey, 1);
+  db.prepare(
+    `UPDATE room_state SET rest_used = ?, updated_at = ? WHERE user_id = ? AND room_key = ?`
+  ).run(restUsed ? 1 : 0, nowMs(), userId, roomKey);
 }
 
 export function getRoomEventOn(userId, roomKey) {

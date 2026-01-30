@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { getUserId, readJson, sendJson, sendText } from './http.js';
-import { getOrCreatePlayer, resetPlayer, savePlayer, ensureRoom, setRoomEventOn, getRoomEventOn } from './storeSqlite.js';
+import { getOrCreatePlayer, resetPlayer, savePlayer, ensureRoom, setRoomEventOn, getRoomEventOn, getRoomRestUsed, setRoomRestUsed } from './storeSqlite.js';
 import { snapshotRoom, validateMove, applyMove, roomTypeFor } from './game.js';
 import { addItem, MAX_SLOTS, emptyInventory } from './inventory.js';
 import { getItem } from './items.js';
@@ -107,19 +107,35 @@ const routes = {
 
     const now = Date.now();
 
-    // Empty room: allow REST even after LOOK cleared the room event.
+    // Empty room: REST is allowed only after LOOK cleared the room event, and only once per room.
     if (!currentOn && roomType === 'Empty' && action === 'REST') {
+      const restUsed = getRoomRestUsed(userId, roomKey);
+      if (restUsed) {
+        sendJson(res, 200, {
+          ok: false,
+          code: 'REST_USED',
+          message: 'already rested in this room',
+          state,
+          room: snapshotRoom(state, { eventOn: false }),
+          log: [{ ts: now, level: 'info', code: 'REST_USED', msg: 'rest already used', ctx: { roomKey } }],
+          meta: { roomType, action },
+        });
+        return;
+      }
+
       const next = { ...state };
       next.hp = Math.min(next.hp + 10, 999);
       next.updatedAt = now;
       next.version = (state.version ?? 1) + 1;
       savePlayer(next);
+      setRoomRestUsed(userId, roomKey, true);
+
       sendJson(res, 200, {
         ok: true,
         state: next,
         room: snapshotRoom(next, { eventOn: false }),
         log: [
-          { ts: now, level: 'info', code: 'REST', msg: 'rested in empty room', ctx: { hpDelta: 10 } },
+          { ts: now, level: 'info', code: 'REST', msg: 'rested in empty room', ctx: { hpDelta: 10, roomKey } },
           { ts: now, level: 'info', code: 'STATE', msg: 'state after rest', ctx: { hp: next.hp } },
         ],
         meta: { roomType, action },
@@ -171,9 +187,12 @@ const routes = {
           next.gold += gain;
           log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found gold', ctx: { goldDelta: gain, roll } });
         } else if (roll < 75) {
-          const added = addItem(next.inventory, 'food_bread', 1);
+          // Food pool
+          const foods = ['food_apple', 'food_bread', 'food_meat'];
+          const picked = foods[Math.floor(Math.random() * foods.length)];
+          const added = addItem(next.inventory, picked, 1);
           next.inventory = added.inventory;
-          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found item', ctx: { itemId: 'food_bread', roll } });
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found item', ctx: { itemId: picked, roll } });
           for (const l of added.log) log.push({ ts: now, level: l.level, code: l.code, msg: l.msg, ctx: l.ctx });
         } else if (roll < 88) {
           const added = addItem(next.inventory, 'weapon_rusty_sword', 1);
