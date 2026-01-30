@@ -80,15 +80,22 @@ export function PlayerActionControls() {
 									)}
 								</>
 							);
-						case 'Empty':
+						case 'Empty': {
+							const roomKey = `${pos.x},${pos.y}`;
+							const eventOn = roomEventOn[roomKey];
+							const canRest = eventOn === false; // 살펴보기 이후(이벤트 종료) 쉬기 노출
 							return (
 								<>
 									{!showMove && (
 										<>
-											<Button className="rounded-xl" onClick={() => void serverResolve('LOOK')}>살펴보기</Button>
-											<Button className="rounded-xl" onClick={() => void serverResolve('REST')}>
-												<BedDouble className="mr-2 w-4 h-4" />쉬기
-											</Button>
+											{!canRest && (
+												<Button className="rounded-xl" onClick={() => void serverResolve('LOOK')}>살펴보기</Button>
+											)}
+											{canRest && (
+												<Button className="rounded-xl" onClick={() => void serverResolve('REST')}>
+													<BedDouble className="mr-2 w-4 h-4" />쉬기
+												</Button>
+											)}
 											<Button className="rounded-xl" onClick={() => { setShowMove(true); setGameState({ tempSceneSrc: '/img_entering.png', playerState: 'Move.Select' }); }}>이동하기</Button>
 										</>
 									)}
@@ -113,6 +120,7 @@ export function PlayerActionControls() {
 									)}
 								</>
 							);
+						}
 						case 'Monster':
 							return (
 								<>

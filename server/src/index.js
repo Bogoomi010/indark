@@ -97,6 +97,26 @@ const routes = {
 
     const now = Date.now();
 
+    // Empty room: allow REST even after LOOK cleared the room event.
+    if (!currentOn && roomType === 'Empty' && action === 'REST') {
+      const next = { ...state };
+      next.hp = Math.min(next.hp + 10, 999);
+      next.updatedAt = now;
+      next.version = (state.version ?? 1) + 1;
+      savePlayer(next);
+      sendJson(res, 200, {
+        ok: true,
+        state: next,
+        room: snapshotRoom(next, { eventOn: false }),
+        log: [
+          { ts: now, level: 'info', code: 'REST', msg: 'rested in empty room', ctx: { hpDelta: 10 } },
+          { ts: now, level: 'info', code: 'STATE', msg: 'state after rest', ctx: { hp: next.hp } },
+        ],
+        meta: { roomType, action },
+      });
+      return;
+    }
+
     if (!currentOn) {
       sendJson(res, 200, {
         ok: false,
@@ -128,6 +148,26 @@ const routes = {
       // simple fight
       next.hp = Math.max(next.hp - 5, 0);
       log.push({ ts: now, level: 'info', code: 'MONSTER', msg: 'fought monster', ctx: { hpDelta: -5 } });
+    } else if (roomType === 'Empty') {
+      if (action === 'LOOK') {
+        // MVP: small random loot
+        const roll = Math.floor(Math.random() * 100);
+        if (roll < 40) {
+          next.torch = Math.min(next.torch + 5, 999);
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found torch supplies', ctx: { torchDelta: 5 } });
+        } else if (roll < 70) {
+          next.sta = Math.min(next.sta + 3, 999);
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found food', ctx: { staDelta: 3 } });
+        } else {
+          log.push({ ts: now, level: 'info', code: 'LOOK', msg: 'found nothing', ctx: { roll } });
+        }
+      } else if (action === 'REST') {
+        // REST when event is still on: allow it too.
+        next.hp = Math.min(next.hp + 10, 999);
+        log.push({ ts: now, level: 'info', code: 'REST', msg: 'rested', ctx: { hpDelta: 10 } });
+      } else {
+        log.push({ ts: now, level: 'debug', code: 'ROOM', msg: 'unknown empty action', ctx: { action } });
+      }
     } else {
       log.push({ ts: now, level: 'debug', code: 'ROOM', msg: 'nothing to resolve', ctx: { roomType } });
     }
